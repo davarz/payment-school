@@ -2,201 +2,92 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
-use Carbon\Carbon;
+use App\Models\User;
 
 class PasswordResetService
 {
-    const MAX_ATTEMPTS_PER_IP = 5;
-    const MAX_ATTEMPTS_PER_EMAIL = 3;
-    const RATE_LIMIT_DURATION = 3600; // 1 jam dalam detik
-    const TOKEN_EXPIRY_MINUTES = 60;
-
     /**
-     * Cek apakah IP sudah melebihi rate limit
+     * Check IP rate limit
      */
     public function checkIpRateLimit(string $ip): bool
     {
-        $key = "pwd_reset_ip:{$ip}";
+        $key = 'pwd_reset_ip:' . $ip;
         $attempts = Cache::get($key, 0);
         
-        return $attempts >= self::MAX_ATTEMPTS_PER_IP;
+        return $attempts >= 5; // Max 5 attempts per IP per hour
     }
 
     /**
-     * Cek apakah email sudah melebihi rate limit
+     * Check email rate limit
      */
     public function checkEmailRateLimit(string $email): bool
     {
-        $key = "pwd_reset_email:{$email}";
+        $key = 'password_reset_attempts:' . $email;
         $attempts = Cache::get($key, 0);
         
-        return $attempts >= self::MAX_ATTEMPTS_PER_EMAIL;
+        return $attempts >= 3; // Max 3 attempts per email per hour
     }
 
     /**
-     * Increment rate limit counter
-     */
-    public function incrementRateLimit(string $ip, string $email): void
-    {
-        $ipKey = "pwd_reset_ip:{$ip}";
-        $emailKey = "pwd_reset_email:{$email}";
-        
-        Cache::put($ipKey, Cache::get($ipKey, 0) + 1, self::RATE_LIMIT_DURATION);
-        Cache::put($emailKey, Cache::get($emailKey, 0) + 1, self::RATE_LIMIT_DURATION);
-    }
-
-    /**
-     * Validasi user apakah boleh reset password
+     * Validate user
      */
     public function validateUser(string $email): array
     {
         $user = User::where('email', $email)->first();
-
+        
         if (!$user) {
             return [
                 'success' => false,
-                'error' => 'Email tidak terdaftar dalam sistem.'
+                'error' => 'Email tidak terdaftar di sistem'
             ];
         }
 
-        if ($user->role !== 'siswa') {
-            Log::warning('Non-siswa attempted password reset', [
-                'email' => $email,
-                'role' => $user->role
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Hanya siswa yang dapat reset password melalui sistem ini. Admin/Operator silakan hubungi super admin.'
-            ];
-        }
-
-        return [
-            'success' => true,
-            'user' => $user
-        ];
-    }
-
-    /**
-     * Delete existing tokens untuk email tertentu
-     */
-    public function deleteExistingTokens(string $email): int
-    {
-        $count = DB::table('password_reset_tokens')
-            ->where('email', $email)
-            ->count();
-
-        if ($count > 0) {
-            DB::table('password_reset_tokens')
-                ->where('email', $email)
-                ->delete();
-
-            Log::info('Deleted existing password reset tokens', [
-                'email' => $email,
-                'count' => $count
-            ]);
-        }
-
-        return $count;
-    }
-
-    /**
-     * Kirim reset link
-     */
-    public function sendResetLink(string $email): array
-    {
-        try {
-            $status = Password::sendResetLink(['email' => $email]);
-
-            if ($status === Password::RESET_LINK_SENT) {
-                Log::info('Password reset link sent successfully', [
-                    'email' => $email,
-                    'timestamp' => now()
-                ]);
-
+        // Cek jika user adalah siswa dan tidak aktif
+        if ($user->role === 'siswa') {
+            $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
+            if (!$siswa || $siswa->status_siswa !== 'aktif') {
                 return [
-                    'success' => true,
-                    'message' => 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'
+                    'success' => false,
+                    'error' => 'Akun siswa tidak aktif. Silakan hubungi administrator.'
                 ];
             }
-
-            Log::warning('Password reset link failed to send', [
-                'email' => $email,
-                'status' => $status
-            ]);
-
-            return [
-                'success' => false,
-                'error' => __($status)
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Exception while sending password reset link', [
-                'email' => $email,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator.'
-            ];
-        }
-    }
-
-    /**
-     * Validasi token reset password
-     */
-    public function validateResetToken(string $email, string $token): array
-    {
-        $tokenData = DB::table('password_reset_tokens')
-            ->where('email', $email)
-            ->first();
-
-        if (!$tokenData) {
-            Log::warning('Password reset token not found', ['email' => $email]);
-            
-            return [
-                'success' => false,
-                'error' => 'Token tidak valid atau sudah kadaluarsa.'
-            ];
-        }
-
-        // Cek apakah token sudah expired (1 jam)
-        $createdAt = Carbon::parse($tokenData->created_at);
-        if ($createdAt->addMinutes(self::TOKEN_EXPIRY_MINUTES)->isPast()) {
-            $this->deleteExistingTokens($email);
-            
-            Log::info('Password reset token expired', [
-                'email' => $email,
-                'created_at' => $tokenData->created_at
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'Token sudah kadaluarsa. Silakan request reset password lagi.'
-            ];
         }
 
         return ['success' => true];
     }
 
     /**
-     * Clear semua cache terkait password reset
+     * Delete existing tokens
+     */
+    public function deleteExistingTokens(string $email): int
+    {
+        return DB::table('password_reset_tokens')
+            ->where('email', $email)
+            ->delete();
+    }
+
+    /**
+     * Increment rate limit counters
+     */
+    public function incrementRateLimit(string $ip, string $email): void
+    {
+        // IP rate limit
+        $ipKey = 'pwd_reset_ip:' . $ip;
+        Cache::put($ipKey, Cache::get($ipKey, 0) + 1, now()->addHour());
+
+        // Email rate limit
+        $emailKey = 'password_reset_attempts:' . $email;
+        Cache::put($emailKey, Cache::get($emailKey, 0) + 1, now()->addHour());
+    }
+
+    /**
+     * Clear reset cache
      */
     public function clearResetCache(string $email, string $ip): void
     {
-        Cache::forget("pwd_reset_email:{$email}");
-        Cache::forget("pwd_reset_ip:{$ip}");
-        
-        Log::info('Password reset cache cleared', [
-            'email' => $email,
-            'ip' => $ip
-        ]);
+        Cache::forget('pwd_reset_ip:' . $ip);
+        Cache::forget('password_reset_attempts:' . $email);
     }
 }

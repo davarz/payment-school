@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
-use App\Models\User;
+use App\Models\Siswa; // Ganti User dengan Siswa
 use App\Models\KategoriPembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PembayaranController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Pembayaran::with(['user', 'kategori']);
+        $query = Pembayaran::with(['user', 'kategori', 'user.siswa']); // Tambahkan relasi siswa
 
         if ($request->has('bulan') && $request->bulan) {
             $query->whereMonth('tanggal_bayar', $request->bulan);
@@ -34,7 +35,19 @@ class PembayaranController extends Controller
 
     public function create()
     {
-        $siswa = User::where('role', 'siswa')->get();
+        // Ambil siswa yang aktif melalui relasi
+        $siswa = Siswa::where('status_siswa', 'aktif')
+            ->with('user')
+            ->get()
+            ->map(function ($siswa) {
+                return [
+                    'id' => $siswa->user_id, // Gunakan user_id untuk pembayaran
+                    'name' => $siswa->user->name ?? 'N/A',
+                    'nis' => $siswa->nis,
+                    'kelas' => $siswa->kelas,
+                ];
+            });
+            
         $kategori = KategoriPembayaran::where('status', 'active')->get();
         return view('admin.pembayaran.create', compact('siswa', 'kategori'));
     }
@@ -48,19 +61,28 @@ class PembayaranController extends Controller
             'tanggal_bayar' => 'required|date',
             'metode_bayar' => 'required|in:tunai,transfer,qris',
             'keterangan' => 'nullable|string',
+            'bukti_bayar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        Pembayaran::create([
+        $data = [
             'user_id' => $request->user_id,
             'kategori_pembayaran_id' => $request->kategori_pembayaran_id,
             'jumlah_bayar' => $request->jumlah_bayar,
             'tanggal_bayar' => $request->tanggal_bayar,
             'metode_bayar' => $request->metode_bayar,
             'keterangan' => $request->keterangan,
-            'status' => 'paid', // 🔄 Langsung paid karena dibuat admin
+            'status' => 'paid',
             'verified_by' => auth()->id(),
             'verified_at' => now(),
-        ]);
+        ];
+
+        // Upload bukti bayar jika ada
+        if ($request->hasFile('bukti_bayar')) {
+            $path = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
+            $data['bukti_bayar'] = $path;
+        }
+
+        Pembayaran::create($data);
 
         return redirect()->route('admin.pembayaran.index')
             ->with('success', 'Pembayaran berhasil dicatat');
@@ -73,14 +95,19 @@ class PembayaranController extends Controller
     {
         DB::transaction(function () use ($pembayaran) {
             $pembayaran->update([
-                'status' => 'paid', // 🔄 UBAH: verified → paid
+                'status' => 'paid',
                 'verified_by' => auth()->id(),
                 'verified_at' => now(),
             ]);
             
-            // Update related tagihan jika ada
-            if ($pembayaran->tagihan_id) {
-                $pembayaran->tagihan->update(['status' => 'paid']);
+            // Update related tagihan jika ada (cari berdasarkan user dan kategori)
+            $tagihan = \App\Models\Tagihan::where('user_id', $pembayaran->user_id)
+                ->where('kategori_pembayaran_id', $pembayaran->kategori_pembayaran_id)
+                ->where('status', 'unpaid')
+                ->first();
+                
+            if ($tagihan) {
+                $tagihan->update(['status' => 'paid']);
             }
         });
 
@@ -94,7 +121,7 @@ class PembayaranController extends Controller
     public function cancel(Pembayaran $pembayaran)
     {
         $pembayaran->update([
-            'status' => 'canceled', // 🔄 UBAH: rejected → canceled
+            'status' => 'canceled',
             'verified_by' => auth()->id(),
             'verified_at' => now(),
         ]);
@@ -105,8 +132,22 @@ class PembayaranController extends Controller
 
     public function destroy(Pembayaran $pembayaran)
     {
+        // Hapus bukti bayar jika ada
+        if ($pembayaran->bukti_bayar && Storage::disk('public')->exists($pembayaran->bukti_bayar)) {
+            Storage::disk('public')->delete($pembayaran->bukti_bayar);
+        }
+        
         $pembayaran->delete();
         return redirect()->route('admin.pembayaran.index')
             ->with('success', 'Pembayaran berhasil dihapus');
+    }
+
+    /**
+     * SHOW DETAIL PEMBAYARAN
+     */
+    public function show(Pembayaran $pembayaran)
+    {
+        $pembayaran->load(['user', 'kategori', 'verifikator', 'user.siswa']);
+        return view('admin.pembayaran.show', compact('pembayaran'));
     }
 }

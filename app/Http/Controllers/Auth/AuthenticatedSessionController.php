@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;  
+use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,13 +22,32 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse  // 🔥 Tetap type hint sama
+    public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+        
+        // Redirect berdasarkan role
+        switch ($user->role) {
+            case 'admin':
+                return redirect()->route('admin.dashboard');
+            case 'operator':
+                return redirect()->route('operator.dashboard');
+            case 'siswa':
+                // Cek status siswa
+                $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
+                if (!$siswa || $siswa->status_siswa !== 'aktif') {
+                    Auth::logout();
+                    return redirect()->route('login')
+                        ->withErrors(['email' => 'Akun Anda tidak aktif. Silakan hubungi administrator.']);
+                }
+                return redirect()->route('siswa.dashboard');
+            default:
+                return redirect()->route('dashboard');
+        }
     }
 
     /**

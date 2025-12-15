@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Siswa; // Ganti User dengan Siswa
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,8 @@ class BulkOperationController extends Controller
 {
     public function naikKelas()
     {
-        $siswa = User::where('role', 'siswa')->where('status_siswa', 'aktif')->get();   
+        // Mengambil data dari tabel siswa
+        $siswa = Siswa::where('status_siswa', 'aktif')->get();   
         return view('admin.bulk.naik-kelas', compact('siswa'));
     }
 
@@ -22,7 +24,8 @@ class BulkOperationController extends Controller
             'kelas' => 'required|string',
         ]);
 
-        User::whereIn('id', $request->siswa_ids)
+        // Update ke tabel siswa
+        Siswa::whereIn('id', $request->siswa_ids)
             ->update([
                 'tahun_ajaran' => $request->tahun_ajaran,
                 'kelas' => $request->kelas,
@@ -39,7 +42,8 @@ class BulkOperationController extends Controller
         ]);
 
         // Update logic untuk semester
-        // Ini akan diimplementasikan di bagian berikutnya
+        // Misalnya: update setting aplikasi atau data lainnya
+        // session()->put('semester_aktif', $request->semester);
 
         return redirect()->route('admin.dashboard')
             ->with('success', 'Semester berhasil diubah');

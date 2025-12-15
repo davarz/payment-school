@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ForgotPasswordRequest extends FormRequest
 {
@@ -14,20 +15,16 @@ class ForgotPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => [
-                'required',
-                'email',
-                'exists:users,email'
-            ]
+            'email' => ['required', 'email', 'exists:users,email'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.exists' => 'Email tidak terdaftar dalam sistem.'
+            'email.required' => 'Email harus diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.exists' => 'Email tidak terdaftar di sistem',
         ];
     }
 }

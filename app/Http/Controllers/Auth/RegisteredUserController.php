@@ -32,31 +32,15 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'nis' => ['required', 'string', 'max:20', 'unique:'.User::class],
-            'nik' => ['required', 'string', 'max:16', 'unique:'.User::class],
-            'tahun_ajaran' => ['required', 'string', 'max:9'],
-            'kelas' => ['required', 'string', 'max:10'],
-            'alamat' => ['required', 'string', 'max:255'],
-            'telepon' => ['required', 'string', 'max:15'],
-            'tempat_lahir' => ['required', 'string', 'max:100'],
-            'tanggal_lahir' => ['required', 'date'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['sometimes', 'in:admin,operator,siswa'], // Tambahkan validasi role
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'nis' => $request->nis,
-            'nik' => $request->nik,
-            'tahun_ajaran' => $request->tahun_ajaran,
-            'status_siswa' => 'aktif', // Default status
-            'kelas' => $request->kelas,
-            'alamat' => $request->alamat,
-            'telepon' => $request->telepon,
-            'tempat_lahir' => $request->tempat_lahir,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'role' => 'siswa', // Default role untuk registrasi
             'password' => Hash::make($request->password),
+            'role' => $request->role ?? 'siswa', // Default role siswa
         ]);
 
         event(new Registered($user));

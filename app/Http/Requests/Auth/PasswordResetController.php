@@ -25,26 +25,33 @@ class PasswordResetController extends Controller
     }
 
     /**
-     * Show forgot password form
+     * Show forgot password form (compatible with Breeze)
      */
     public function showForgotForm(Request $request)
     {
         return view('auth.forgot-password', [
             'request' => $request,
-            'token' => $request->route('token'),
         ]);
     }
 
     /**
-     * Handle forgot password request
+     * Handle forgot password request (compatible with Breeze)
      */
     public function sendResetLink(ForgotPasswordRequest $request)
     {
         $email = $request->email;
         $ip = $request->ip();
 
+        Log::channel('security')->info('Password reset requested', [
+            'email' => $email,
+            'ip' => $ip,
+            'timestamp' => now(),
+            'type' => 'reset_request'
+        ]);
+
         // Cek rate limit IP
         if ($this->resetService->checkIpRateLimit($ip)) {
+            Log::channel('security')->warning('IP rate limit exceeded', ['ip' => $ip]);
             return back()->withErrors([
                 'email' => 'Terlalu banyak percobaan dari IP Anda. Silakan coba lagi dalam 1 jam.'
             ]);
@@ -52,6 +59,7 @@ class PasswordResetController extends Controller
 
         // Cek rate limit email
         if ($this->resetService->checkEmailRateLimit($email)) {
+            Log::channel('security')->warning('Email rate limit exceeded', ['email' => $email]);
             return back()->withErrors([
                 'email' => 'Terlalu banyak permintaan untuk email ini. Silakan coba lagi dalam 1 jam.'
             ]);
@@ -66,27 +74,29 @@ class PasswordResetController extends Controller
         // Delete existing tokens
         $deletedCount = $this->resetService->deleteExistingTokens($email);
 
-        // Kirim reset link
-        $result = $this->resetService->sendResetLink($email);
+        // Kirim reset link menggunakan Laravel Password Broker
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
 
         // Increment rate limit
         $this->resetService->incrementRateLimit($ip, $email);
 
-        if ($result['success']) {
+        if ($status === Password::RESET_LINK_SENT) {
             $message = $deletedCount > 0 
                 ? 'Link reset password BARU telah dikirim! Link sebelumnya sudah tidak berlaku.'
-                : $result['message'];
+                : 'Link reset password telah dikirim ke email Anda!';
 
-            return back()->with('status', $message);
+            return back()->with('status', __($message));
         }
 
-        return back()->withErrors(['email' => $result['error']]);
+        return back()->withErrors(['email' => __($status)]);
     }
 
     /**
-     * Show reset password form
+     * Show reset password form (compatible with Breeze)
      */
-    public function showResetForm(Request $request, string $token)
+    public function showResetForm(Request $request, string $token = null)
     {
         return view('auth.reset-password', [
             'token' => $token,
@@ -95,7 +105,7 @@ class PasswordResetController extends Controller
     }
 
     /**
-     * Handle reset password - FIXED VERSION
+     * Handle reset password - UPDATED for Breeze compatibility
      */
     public function resetPassword(ResetPasswordRequest $request)
     {
@@ -104,121 +114,131 @@ class PasswordResetController extends Controller
         $newPassword = $request->password;
         $ip = $request->ip();
 
-        Log::info('🔄 Password reset attempt started', [
+        Log::channel('security')->info('Password reset attempt started', [
             'email' => $email,
             'ip' => $ip,
             'timestamp' => now()
         ]);
 
-        // 1️⃣ VALIDASI TOKEN DULU
-        $tokenData = DB::table('password_reset_tokens')
-            ->where('email', $email)
-            ->first();
-
-        if (!$tokenData) {
-            Log::warning('❌ Token not found in database', ['email' => $email]);
-            return back()->withErrors(['email' => 'Token tidak valid atau sudah kadaluarsa.']);
-        }
-
-        // 2️⃣ CEK TOKEN MATCH
-        if (!Hash::check($token, $tokenData->token)) {
-            Log::warning('❌ Token mismatch', ['email' => $email]);
-            return back()->withErrors(['email' => 'Token tidak valid.']);
-        }
-
-        // 3️⃣ CEK EXPIRED (60 menit)
-        $tokenAge = now()->diffInMinutes($tokenData->created_at);
-        if ($tokenAge > 60) {
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
-            Log::warning('❌ Token expired', [
-                'email' => $email,
-                'age_minutes' => $tokenAge
-            ]);
-            return back()->withErrors(['email' => 'Token sudah kadaluarsa (lebih dari 1 jam).']);
-        }
-
-        // 4️⃣ GET USER
-        $user = User::where('email', $email)->first();
-
-        if (!$user) {
-            Log::error('❌ User not found', ['email' => $email]);
-            return back()->withErrors(['email' => 'User tidak ditemukan.']);
-        }
-
-        // 5️⃣ LOG PASSWORD SEBELUM UPDATE (untuk debug)
-        $oldPasswordHash = $user->password;
-        Log::info('📝 Current password hash', [
-            'email' => $email,
-            'old_hash_preview' => substr($oldPasswordHash, 0, 20) . '...'
-        ]);
-
-        // 6️⃣ UPDATE PASSWORD - HATI-HATI DI SINI!
-        try {
-            // Hash password HANYA 1x
-            $newPasswordHash = Hash::make($newPassword);
-
-            Log::info('🔐 New password hashed', [
-                'email' => $email,
-                'new_hash_preview' => substr($newPasswordHash, 0, 20) . '...'
-            ]);
-
-            // Update ke database
-            $user->password = $newPasswordHash;
-            $user->setRememberToken(Str::random(60));
-            $user->save();
-
-            // Verify password tersimpan dengan benar
-            $user->refresh();
-            $savedHash = $user->password;
-
-            Log::info('💾 Password saved to database', [
-                'email' => $email,
-                'saved_hash_preview' => substr($savedHash, 0, 20) . '...',
-                'hash_changed' => $savedHash !== $oldPasswordHash
-            ]);
-
-            // Test apakah password bisa di-check
-            $canLogin = Hash::check($newPassword, $user->password);
-            Log::info('🧪 Password verification test', [
-                'email' => $email,
-                'can_login' => $canLogin ? 'YES ✅' : 'NO ❌'
-            ]);
-
-            if (!$canLogin) {
-                Log::error('❌ CRITICAL: Password saved but cannot verify!', [
-                    'email' => $email,
-                    'new_password_length' => strlen($newPassword),
-                    'saved_hash' => $savedHash
+        // Validasi menggunakan Laravel Password Broker
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user) use ($request) {
+                $oldPasswordHash = $user->password;
+                
+                Log::info('Updating user password', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'old_hash_preview' => substr($oldPasswordHash, 0, 20) . '...'
                 ]);
-                throw new \Exception('Password verification failed after save');
+
+                // Update password
+                $user->forceFill([
+                    'password' => Hash::make($request->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                // Verify the update
+                $user->refresh();
+                $canLogin = Hash::check($request->password, $user->password);
+
+                if (!$canLogin) {
+                    Log::error('CRITICAL: Password verification failed after save', [
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                    throw new \Exception('Password verification failed');
+                }
+
+                // Fire event
+                event(new PasswordReset($user));
+
+                Log::info('Password updated successfully', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'hash_changed' => $oldPasswordHash !== $user->password
+                ]);
             }
+        );
 
-            // 7️⃣ FIRE EVENT
-            event(new PasswordReset($user));
-
-            // 8️⃣ CLEAR CACHE & TOKENS
+        // Clear cache & tokens setelah reset
+        if ($status === Password::PASSWORD_RESET) {
             $this->resetService->clearResetCache($email, $ip);
-            DB::table('password_reset_tokens')->where('email', $email)->delete();
-
-            Log::info('✅ Password reset successful', [
+            
+            Log::channel('security')->info('Password reset successful', [
                 'email' => $email,
-                'timestamp' => now()
+                'ip' => $ip,
+                'timestamp' => now(),
+                'type' => 'reset_success'
             ]);
 
             return redirect()
                 ->route('login')
                 ->with('status', '✅ Password berhasil direset! Silakan login dengan password baru.');
+        }
+
+        // Log failure
+        Log::channel('security')->warning('Password reset failed', [
+            'email' => $email,
+            'ip' => $ip,
+            'status' => $status,
+            'timestamp' => now(),
+            'type' => 'reset_failed'
+        ]);
+
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => __($status)]);
+    }
+
+    /**
+     * Additional method for admin-triggered password reset
+     */
+    public function adminTriggeredReset(Request $request, User $user)
+    {
+        // Only admin can trigger this
+        if (!auth()->check() || !auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            $token = Str::random(64);
+            
+            // Delete existing tokens
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            
+            // Insert new token
+            DB::table('password_reset_tokens')->insert([
+                'email' => $user->email,
+                'token' => Hash::make($token),
+                'created_at' => now()
+            ]);
+
+            // Generate reset URL
+            $resetUrl = route('password.reset', [
+                'token' => $token,
+                'email' => $user->email
+            ]);
+
+            // Send notification
+            $user->notify(new \App\Notifications\AdminTriggeredPasswordReset($resetUrl, $user->name));
+
+            Log::info('Admin triggered password reset', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+
+            return back()->with('success', 'Link reset password telah dikirim ke email: ' . $user->email);
 
         } catch (\Exception $e) {
-            Log::error('❌ Password reset failed', [
-                'email' => $email,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::error('Failed to send admin-triggered reset link', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
             ]);
 
-            return back()->withErrors([
-                'email' => 'Terjadi kesalahan saat mereset password. Silakan coba lagi.'
-            ]);
+            return back()->with('error', 'Gagal mengirim link reset password.');
         }
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tagihan;
-use App\Models\User;
+use App\Models\Siswa; // Ganti User dengan Siswa
 use App\Models\KategoriPembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +13,7 @@ class TagihanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Tagihan::with(['user', 'kategori']);
+        $query = Tagihan::with(['user', 'kategori', 'user.siswa']); // Tambahkan relasi siswa
 
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
@@ -27,20 +27,42 @@ class TagihanController extends Controller
             $query->whereYear('tanggal_jatuh_tempo', $request->tahun);
         }
 
+        if ($request->has('kelas') && $request->kelas) {
+            $query->whereHas('user.siswa', function ($q) use ($request) {
+                $q->where('kelas', $request->kelas);
+            });
+        }
+
         $tagihan = $query->latest()->paginate(10);
 
-        return view('admin.tagihan.index', compact('tagihan'));
+        // Get unique kelas for filter
+        $kelasList = Siswa::distinct()->pluck('kelas')->filter()->values();
+
+        return view('admin.tagihan.index', compact('tagihan', 'kelasList'));
     }
 
     public function show(Tagihan $tagihan)
     {
-        $tagihan->load(['user', 'kategori', 'pembayaran']);
+        $tagihan->load(['user', 'kategori', 'pembayaran', 'user.siswa']);
         return view('admin.tagihan.show', compact('tagihan'));
     }
 
     public function create()
     {
-        $siswa = User::where('role', 'siswa')->where('status_siswa', 'aktif')->get();
+        // Ambil siswa aktif dengan data lengkap
+        $siswa = Siswa::where('status_siswa', 'aktif')
+            ->with('user')
+            ->get()
+            ->map(function ($siswa) {
+                return [
+                    'id' => $siswa->user_id, // Gunakan user_id untuk tagihan
+                    'name' => $siswa->user->name ?? 'N/A',
+                    'nis' => $siswa->nis,
+                    'kelas' => $siswa->kelas,
+                    'nisn' => $siswa->nisn,
+                ];
+            });
+            
         $kategori = KategoriPembayaran::where('status', 'active')->get();
         return view('admin.tagihan.create', compact('siswa', 'kategori'));
     }
@@ -61,7 +83,7 @@ class TagihanController extends Controller
             'jumlah_tagihan' => $request->jumlah_tagihan,
             'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo,
             'keterangan' => $request->keterangan,
-            'status' => 'unpaid', // 🔄 UBAH: pending → unpaid
+            'status' => 'unpaid',
         ]);
 
         return redirect()->route('admin.tagihan.index')
@@ -71,7 +93,21 @@ class TagihanController extends Controller
     public function edit(Tagihan $tagihan)
     {
         $kategori = KategoriPembayaran::where('status', 'active')->get();
-        return view('admin.tagihan.edit', compact('tagihan', 'kategori'));
+        
+        // Ambil siswa untuk dropdown
+        $siswa = Siswa::where('status_siswa', 'aktif')
+            ->with('user')
+            ->get()
+            ->map(function ($siswa) {
+                return [
+                    'id' => $siswa->user_id,
+                    'name' => $siswa->user->name ?? 'N/A',
+                    'nis' => $siswa->nis,
+                    'kelas' => $siswa->kelas,
+                ];
+            });
+            
+        return view('admin.tagihan.edit', compact('tagihan', 'kategori', 'siswa'));
     }
 
     public function update(Request $request, Tagihan $tagihan)
@@ -82,7 +118,7 @@ class TagihanController extends Controller
             'jumlah_tagihan' => 'required|numeric|min:0',
             'tanggal_jatuh_tempo' => 'required|date',
             'keterangan' => 'nullable|string',
-            'status' => 'required|in:unpaid,pending,paid,canceled', // 🔄 UBAH
+            'status' => 'required|in:unpaid,pending,paid,canceled',
         ]);
 
         $tagihan->update($request->all());
@@ -103,9 +139,9 @@ class TagihanController extends Controller
         try {
             $startTime = microtime(true);
 
-            $siswaIds = User::where('role', 'siswa')
-                ->where('status_siswa', 'aktif')
-                ->pluck('id');
+            // Ambil user_id dari siswa yang aktif
+            $userIds = Siswa::where('status_siswa', 'aktif')
+                ->pluck('user_id');
 
             $kategoriAktif = KategoriPembayaran::where('status', 'active')
                 ->where('auto_generate', true)
@@ -115,12 +151,11 @@ class TagihanController extends Controller
             $bulanIni = now()->month;
             $tahunIni = now()->year;
 
-            foreach ($siswaIds as $siswaId) {
+            foreach ($userIds as $userId) {
                 foreach ($kategoriAktif as $kategori) {
                     if ($this->shouldGenerateThisMonth($kategori)) {
-                        $created = $this->createTagihan($siswaId, $kategori, $bulanIni, $tahunIni);
-                        if ($created)
-                            $totalGenerated++;
+                        $created = $this->createTagihan($userId, $kategori, $bulanIni, $tahunIni);
+                        if ($created) $totalGenerated++;
                     }
                 }
             }
@@ -150,8 +185,7 @@ class TagihanController extends Controller
     public function markAsPaid(Tagihan $tagihan)
     {
         $tagihan->update([
-            'status' => 'paid', // 🔄 UBAH: paid (tetap sama)
-            'paid_at' => now(),
+            'status' => 'paid',
         ]);
 
         return redirect()->route('admin.tagihan.index')
@@ -164,7 +198,7 @@ class TagihanController extends Controller
     public function cancel(Tagihan $tagihan)
     {
         $tagihan->update([
-            'status' => 'canceled', // 🔄 STATUS BARU
+            'status' => 'canceled',
         ]);
 
         return redirect()->route('admin.tagihan.index')
@@ -185,9 +219,9 @@ class TagihanController extends Controller
         };
     }
 
-    protected function createTagihan($siswaId, $kategori, $bulanIni, $tahunIni)
+    protected function createTagihan($userId, $kategori, $bulanIni, $tahunIni)
     {
-        $existing = Tagihan::where('user_id', $siswaId)
+        $existing = Tagihan::where('user_id', $userId)
             ->where('kategori_pembayaran_id', $kategori->id)
             ->whereYear('created_at', $tahunIni);
 
@@ -201,17 +235,17 @@ class TagihanController extends Controller
 
         try {
             Tagihan::create([
-                'user_id' => $siswaId,
+                'user_id' => $userId,
                 'kategori_pembayaran_id' => $kategori->id,
                 'jumlah_tagihan' => $kategori->jumlah,
                 'tanggal_jatuh_tempo' => now()->addDays(15),
-                'status' => 'unpaid', // 🔄 UBAH: pending → unpaid
+                'status' => 'unpaid',
                 'keterangan' => $this->generateKeterangan($kategori)
             ]);
             return true;
         } catch (\Exception $e) {
             Log::error('Gagal membuat tagihan', [
-                'user_id' => $siswaId,
+                'user_id' => $userId,
                 'kategori_id' => $kategori->id,
                 'error' => $e->getMessage()
             ]);

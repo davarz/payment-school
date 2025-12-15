@@ -9,8 +9,8 @@ class Pembayaran extends Model
 {
     use HasFactory;
 
-    // TAMBAH INI
     protected $table = 'pembayaran';
+    
     protected $fillable = [
         'kode_transaksi',
         'user_id',
@@ -29,6 +29,8 @@ class Pembayaran extends Model
         'jumlah_bayar' => 'decimal:2',
         'tanggal_bayar' => 'date',
         'verified_at' => 'datetime',
+        'metode_bayar' => 'string',
+        'status' => 'string',
     ];
 
     public function user()
@@ -51,7 +53,9 @@ class Pembayaran extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->kode_transaksi = 'TRX-' . date('Ymd') . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            if (empty($model->kode_transaksi)) {
+                $model->kode_transaksi = 'TRX-' . date('Ymd') . '-' . strtoupper(uniqid());
+            }
         });
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
 
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,6 +21,8 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
     public function rules(): array
     {
@@ -32,11 +34,14 @@ class LoginRequest extends FormRequest
 
     /**
      * Attempt to authenticate the request's credentials.
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
 
+        // Coba login dengan email dan password
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
@@ -45,11 +50,25 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Cek status user jika siswa
+        $user = Auth::user();
+        if ($user->role === 'siswa') {
+            $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
+            if (!$siswa || $siswa->status_siswa !== 'aktif') {
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'email' => 'Akun siswa tidak aktif. Silakan hubungi administrator.',
+                ]);
+            }
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
     /**
      * Ensure the login request is not rate limited.
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {

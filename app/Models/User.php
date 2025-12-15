@@ -5,47 +5,49 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Notifications\CustomResetPasswordNotification;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Notifications\ResetPasswordNotification;
-
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'nis',
-        'nik',
-        'tahun_ajaran',
-        'status_siswa',
-        'kelas',
-        'alamat',
-        'telepon',
-        'tanggal_lahir',
-        'tempat_lahir',
-        'role',
-    ];
+        'email_verified_at',
+        'remember_token',
+    ]; // Hapus field siswa karena sudah dipisah ke tabel siswa
     
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    // Relationship dengan Siswa
+    public function siswa()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'tanggal_lahir' => 'date',
-        ];
+        return $this->hasOne(Siswa::class);
     }
 
-    // HAPUS SEMUA METHOD SPATIE
-    // GANTI DENGAN METHOD SEDERHANA:
+    // Relationship dengan Pembayaran
+    public function pembayaran()
+    {
+        return $this->hasMany(Pembayaran::class);
+    }
 
+    public function tagihan()
+    {
+        return $this->hasMany(Tagihan::class);
+    }
+
+    // Method permission (jika masih menggunakan role di users table)
     public function isAdmin()
     {
         return $this->role === 'admin';
@@ -59,17 +61,6 @@ class User extends Authenticatable
     public function isSiswa()
     {
         return $this->role === 'siswa';
-    }
-
-    // Relationship tetap
-    public function pembayaran()
-    {
-        return $this->hasMany(Pembayaran::class);
-    }
-
-    public function tagihan()
-    {
-        return $this->hasMany(Tagihan::class);
     }
 
     public function sendPasswordResetNotification($token)

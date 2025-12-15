@@ -10,6 +10,7 @@ class Tagihan extends Model
     use HasFactory;
 
     protected $table = "tagihan";
+    
     protected $fillable = [
         'user_id',
         'kategori_pembayaran_id', 
@@ -17,13 +18,12 @@ class Tagihan extends Model
         'tanggal_jatuh_tempo',
         'status',
         'keterangan',
-        'paid_at'
-    ];
+    ]; // Hapus 'paid_at' karena tidak ada di migration
 
     protected $casts = [
         'tanggal_jatuh_tempo' => 'date',
-        'paid_at' => 'datetime',
-        'jumlah_tagihan' => 'decimal:2'
+        'jumlah_tagihan' => 'decimal:2',
+        'status' => 'string',
     ];
 
     public function user()

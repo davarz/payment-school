@@ -1,143 +1,310 @@
 <?php
 
-use App\Http\Controllers\Admin\BulkOperationController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
-use App\Http\Controllers\Admin\ImportExportController;
-use App\Http\Controllers\Admin\KategoriPembayaranController;
-use App\Http\Controllers\Admin\PembayaranController;
-use App\Http\Controllers\Admin\SiswaController;
-use App\Http\Controllers\Admin\TagihanController;
-use App\Http\Controllers\Auth\PasswordResetController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Siswa\DashboardController as SiswaDashboard;
-use App\Http\Controllers\Siswa\ProfileController as SiswaProfile;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\SiswaController as AdminSiswaController;
+use App\Http\Controllers\Admin\KategoriPembayaranController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
+use App\Http\Controllers\Admin\TagihanController as AdminTagihanController;
+use App\Http\Controllers\Admin\BulkOperationController;
+use App\Http\Controllers\Admin\ImportExportController;
+use App\Http\Controllers\Admin\SecurityController;
+use App\Http\Controllers\Siswa\DashboardController as SiswaDashboardController;
+use App\Http\Controllers\Siswa\ProfileController as SiswaProfileController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Models\Tagihan;
+use Illuminate\Support\Facades\Artisan;
 
-// ============================================================================
-// DEFAULT ROUTES
-// ============================================================================
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// ==================== PUBLIC ROUTES ====================
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-Route::get('/dashboard', function () {
-    $user = Auth::user();
-    return $user->role === 'admin' || $user->role === 'operator'
-        ? redirect()->route('admin.dashboard')
-        : redirect()->route('siswa.dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// ==================== AUTH ROUTES ====================
+require __DIR__ . '/auth.php';
 
-// ============================================================================
-// AUTH PROFILE ROUTES
-// ============================================================================
+// ==================== AUTHENTICATED USER ROUTES ====================
+Route::middleware(['auth'])->group(function () {
+    // Dashboard redirect berdasarkan role
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
 
-Route::middleware('auth')->group(function () {
+        switch ($user->role) {
+            case 'admin':
+                return redirect()->route('admin.dashboard');
+            case 'operator':
+                return redirect()->route('operator.dashboard');
+            case 'siswa':
+                return redirect()->route('siswa.dashboard');
+            default:
+                return redirect()->route('home');
+        }
+    })->name('dashboard');
+
+    // Profile routes (Laravel Breeze default)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ============================================================================
-// ADMIN ROUTES
-// ============================================================================
-
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+// ==================== ADMIN ROUTES ====================
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
-    Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
-    
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
     // Siswa Management
     Route::prefix('siswa')->name('siswa.')->group(function () {
-        Route::get('/{siswa}/json', [SiswaController::class, 'getJson'])->name('json');
-        Route::post('/{siswa}/reset-password', [SiswaController::class, 'resetPassword'])->name('reset-password');
+        Route::get('/', [AdminSiswaController::class, 'index'])->name('index');
+        Route::get('/create', [AdminSiswaController::class, 'create'])->name('create');
+        Route::post('/', [AdminSiswaController::class, 'store'])->name('store');
+        Route::get('/{siswa}', [AdminSiswaController::class, 'show'])->name('show');
+        Route::get('/{siswa}/edit', [AdminSiswaController::class, 'edit'])->name('edit');
+        Route::put('/{siswa}', [AdminSiswaController::class, 'update'])->name('update');
+        Route::delete('/{siswa}', [AdminSiswaController::class, 'destroy'])->name('destroy');
+        Route::post('/{siswa}/reset-password', [AdminSiswaController::class, 'resetPassword'])->name('reset-password');
+        Route::get('/{siswa}/json', [AdminSiswaController::class, 'getJson'])->name('json');
     });
-    Route::resource('siswa', SiswaController::class);
 
     // Kategori Pembayaran
-    Route::resource('kategori', KategoriPembayaranController::class);
+    Route::prefix('kategori')->name('kategori.')->group(function () {
+        Route::get('/', [KategoriPembayaranController::class, 'index'])->name('index');
+        Route::get('/create', [KategoriPembayaranController::class, 'create'])->name('create');
+        Route::post('/', [KategoriPembayaranController::class, 'store'])->name('store');
+        Route::get('/{kategori}/edit', [KategoriPembayaranController::class, 'edit'])->name('edit');
+        Route::put('/{kategori}', [KategoriPembayaranController::class, 'update'])->name('update');
+        Route::delete('/{kategori}', [KategoriPembayaranController::class, 'destroy'])->name('destroy');
+    });
+
+    // laporan Management
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LaporanController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\LaporanController::class, 'export'])->name('export');
+        Route::get('/per-siswa', [\App\Http\Controllers\Admin\LaporanController::class, 'perSiswa'])->name('per-siswa');
+        Route::get('/per-kelas', [\App\Http\Controllers\Admin\LaporanController::class, 'perKelas'])->name('per-kelas');
+        Route::get('/statistik', [\App\Http\Controllers\Admin\LaporanController::class, 'statistik'])->name('statistik');
+    });
+
+    // Tagihan Management
+    Route::prefix('tagihan')->name('tagihan.')->group(function () {
+        Route::get('/', [AdminTagihanController::class, 'index'])->name('index');
+        Route::get('/create', [AdminTagihanController::class, 'create'])->name('create');
+        Route::post('/', [AdminTagihanController::class, 'store'])->name('store');
+        Route::get('/{tagihan}', [AdminTagihanController::class, 'show'])->name('show');
+        Route::get('/{tagihan}/edit', [AdminTagihanController::class, 'edit'])->name('edit');
+        Route::put('/{tagihan}', [AdminTagihanController::class, 'update'])->name('update');
+        Route::delete('/{tagihan}', [AdminTagihanController::class, 'destroy'])->name('destroy');
+        Route::post('/generate-bills', [AdminTagihanController::class, 'generateBills'])->name('generate.bills');
+        Route::post('/{tagihan}/mark-paid', [AdminTagihanController::class, 'markAsPaid'])->name('mark.paid');
+        Route::post('/{tagihan}/cancel', [AdminTagihanController::class, 'cancel'])->name('cancel');
+    });
 
     // Pembayaran Management
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
-        Route::post('/{pembayaran}/verify', [PembayaranController::class, 'verify'])->name('verify');
-        Route::post('/{pembayaran}/reject', [PembayaranController::class, 'reject'])->name('reject');
+        Route::get('/', [AdminPembayaranController::class, 'index'])->name('index');
+        Route::get('/create', [AdminPembayaranController::class, 'create'])->name('create');
+        Route::post('/', [AdminPembayaranController::class, 'store'])->name('store');
+        Route::get('/{pembayaran}', [AdminPembayaranController::class, 'show'])->name('show');
+        Route::delete('/{pembayaran}', [AdminPembayaranController::class, 'destroy'])->name('destroy');
+        Route::post('/{pembayaran}/verify', [AdminPembayaranController::class, 'verify'])->name('verify');
+        Route::post('/{pembayaran}/cancel', [AdminPembayaranController::class, 'cancel'])->name('cancel');
     });
-    Route::resource('pembayaran', PembayaranController::class);
-
-    // Tagihan Management (NEW)
-    Route::prefix('tagihan')->name('tagihan.')->group(function () {
-        Route::post('/generate-bills', [TagihanController::class, 'generateBills'])->name('generate-bills');
-        Route::put('/{tagihan}/mark-paid', [TagihanController::class, 'markAsPaid'])->name('mark-paid');
-    });
-    Route::resource('tagihan', TagihanController::class);
 
     // Bulk Operations
     Route::prefix('bulk')->name('bulk.')->group(function () {
-        Route::get('naik-kelas', [BulkOperationController::class, 'naikKelas'])->name('naik-kelas');
-        Route::post('naik-kelas', [BulkOperationController::class, 'updateNaikKelas'])->name('update-naik-kelas');
-        Route::post('update-semester', [BulkOperationController::class, 'updateSemester'])->name('update-semester');
+        Route::get('/naik-kelas', [BulkOperationController::class, 'naikKelas'])->name('naik-kelas');
+        Route::post('/naik-kelas', [BulkOperationController::class, 'updateNaikKelas'])->name('update-naik-kelas');
+        Route::post('/update-semester', [BulkOperationController::class, 'updateSemester'])->name('update-semester');
     });
 
-    // Import Export
+    // Import/Export
     Route::prefix('import-export')->name('import-export.')->group(function () {
-        Route::get('export', [ImportExportController::class, 'exportData'])->name('export');
-        Route::get('download-backup', [ImportExportController::class, 'downloadBackup'])->name('download-backup');
-        Route::get('import', [ImportExportController::class, 'importData'])->name('import');
-        Route::post('import', [ImportExportController::class, 'processImport'])->name('process-import');
+        Route::get('/export', [ImportExportController::class, 'exportData'])->name('export');
+        Route::get('/download-backup', [ImportExportController::class, 'downloadBackup'])->name('download-backup');
+        Route::get('/import', [ImportExportController::class, 'importData'])->name('import');
+        Route::post('/import', [ImportExportController::class, 'processImport'])->name('process-import');
+    });
+
+    // Security
+    Route::prefix('security')->name('security.')->group(function () {
+        Route::get('/logs', [SecurityController::class, 'securityLogs'])->name('logs');
+        Route::post('/clear-reset-attempts', [SecurityController::class, 'clearResetAttempts'])->name('clear-reset-attempts');
+    });
+
+    // Laporan (Shared dengan operator)
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanController::class, 'index'])->name('index');
+        Route::get('/export', [LaporanController::class, 'export'])->name('export');
     });
 });
 
-// ============================================================================
-// PASSWORD RESET ROUTES (PRODUCTION-READY)
-// ============================================================================
+// ==================== OPERATOR ROUTES ====================
+Route::middleware(['auth', 'role:operator'])->prefix('operator')->name('operator.')->group(function () {
+    // Dashboard (gunakan controller yang sama atau buat khusus)
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-// Route::middleware('guest')->group(function () {
-//     // Forgot Password
-//     Route::get('forgot-password', [PasswordResetController::class, 'showForgotForm'])
-//         ->name('password.request');
-    
-//     Route::post('forgot-password', [PasswordResetController::class, 'sendResetLink'])
-//         ->name('password.email');
+    // Siswa Management (view only)
+    Route::prefix('siswa')->name('siswa.')->group(function () {
+        Route::get('/', [AdminSiswaController::class, 'index'])->name('index');
+        Route::get('/{siswa}', [AdminSiswaController::class, 'show'])->name('show');
+    });
 
-//     // Reset Password
-//     Route::get('reset-password/{token}', [PasswordResetController::class, 'showResetForm'])
-//         ->name('password.reset');
-    
-//     Route::post('reset-password', [PasswordResetController::class, 'resetPassword'])
-//         ->name('password.update');
-// });
+    // Tagihan Management (limited access)
+    Route::prefix('tagihan')->name('tagihan.')->group(function () {
+        Route::get('/', [AdminTagihanController::class, 'index'])->name('index');
+        Route::get('/create', [AdminTagihanController::class, 'create'])->name('create');
+        Route::post('/', [AdminTagihanController::class, 'store'])->name('store');
+        Route::get('/{tagihan}', [AdminTagihanController::class, 'show'])->name('show');
+        Route::get('/{tagihan}/edit', [AdminTagihanController::class, 'edit'])->name('edit');
+        Route::put('/{tagihan}', [AdminTagihanController::class, 'update'])->name('update');
+        Route::post('/{tagihan}/mark-paid', [AdminTagihanController::class, 'markAsPaid'])->name('mark.paid');
+    });
 
-// ============================================================================
-// SISWA ROUTES
-// ============================================================================
+    // Pembayaran Management (limited access)
+    Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+        Route::get('/', [AdminPembayaranController::class, 'index'])->name('index');
+        Route::get('/create', [AdminPembayaranController::class, 'create'])->name('create');
+        Route::post('/', [AdminPembayaranController::class, 'store'])->name('store');
+        Route::get('/{pembayaran}', [AdminPembayaranController::class, 'show'])->name('show');
+        Route::post('/{pembayaran}/verify', [AdminPembayaranController::class, 'verify'])->name('verify');
+    });
 
-Route::middleware(['auth'])->prefix('siswa')->name('siswa.')->group(function () {
-    Route::get('/dashboard', [SiswaDashboard::class, 'index'])->name('dashboard');
-    Route::get('/tagihan', [SiswaDashboard::class, 'tagihan'])->name('tagihan');
-    Route::post('/tagihan', [SiswaDashboard::class, 'createTagihan'])->name('create-tagihan');
-    Route::get('/transaksi', [SiswaDashboard::class, 'transaksi'])->name('transaksi');
-    
-    // Profile Routes
-    Route::get('/profile', [SiswaProfile::class, 'show'])->name('profile.show');
-    Route::get('/profile/edit', [SiswaProfile::class, 'edit'])->name('profile.edit');
-    Route::put('/profile/update', [SiswaProfile::class, 'update'])->name('profile.update');
-    Route::put('/profile/update-password', [SiswaProfile::class, 'updatePassword'])->name('profile.update-password');
+    // Laporan
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanController::class, 'index'])->name('index');
+    });
 });
 
-// ============================================================================
-// DEBUG ROUTES (REMOVE IN PRODUCTION)
-// ============================================================================
+// ==================== SISWA ROUTES ====================
+Route::middleware(['auth', 'role:siswa', 'siswa.status'])->prefix('siswa')->name('siswa.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [SiswaDashboardController::class, 'index'])->name('dashboard');
 
+    // Tagihan
+    Route::prefix('tagihan')->name('tagihan.')->group(function () {
+        Route::get('/', [SiswaDashboardController::class, 'tagihan'])->name('index');
+        Route::post('/', [SiswaDashboardController::class, 'createTagihan'])->name('create');
+        Route::get('/{tagihan}', [SiswaDashboardController::class, 'showTagihan'])->name('show');
+    });
+
+    // Transaksi
+    Route::prefix('transaksi')->name('transaksi.')->group(function () {
+        Route::get('/', [SiswaDashboardController::class, 'transaksi'])->name('index');
+        Route::get('/{pembayaran}', [SiswaDashboardController::class, 'showPembayaran'])->name('show');
+    });
+
+    // Profile
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [SiswaProfileController::class, 'show'])->name('show');
+        Route::get('/edit', [SiswaProfileController::class, 'edit'])->name('edit');
+        Route::put('/', [SiswaProfileController::class, 'update'])->name('update');
+        Route::put('/password', [SiswaProfileController::class, 'updatePassword'])->name('password.update');
+        Route::get('/riwayat-pembayaran', [SiswaProfileController::class, 'riwayatPembayaran'])->name('riwayat.pembayaran');
+        Route::get('/riwayat-tagihan', [SiswaProfileController::class, 'riwayatTagihan'])->name('riwayat.tagihan');
+    });
+});
+
+// ==================== SHARED API ROUTES (untuk AJAX) ====================
+Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
+    // Search siswa by NIS/NISN/Nama
+    Route::get('/siswa/search', function (\Illuminate\Http\Request $request) {
+        $search = $request->get('q');
+
+        if (!$search) {
+            return response()->json(['data' => []]);
+        }
+
+        $siswa = \App\Models\Siswa::with('user')
+            ->where('nis', 'like', "%{$search}%")
+            ->orWhere('nisn', 'like', "%{$search}%")
+            ->orWhereHas('user', function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(function ($siswa) {
+                return [
+                    'id' => $siswa->user_id,
+                    'text' => "{$siswa->nis} - {$siswa->user->name}",
+                    'nis' => $siswa->nis,
+                    'name' => $siswa->user->name,
+                    'kelas' => $siswa->kelas,
+                ];
+            });
+
+        return response()->json(['data' => $siswa]);
+    })->name('siswa.search');
+
+    // Get dashboard stats
+    Route::get('/dashboard/stats', function () {
+        $user = auth()->user();
+        $stats = [];
+
+        if ($user->role === 'admin' || $user->role === 'operator') {
+            $stats = [
+                'total_siswa' => \App\Models\Siswa::where('status_siswa', 'aktif')->count(),
+                'total_pembayaran' => \App\Models\Pembayaran::where('status', 'paid')->sum('jumlah_bayar'),
+                'total_tagihan' => \App\Models\Tagihan::where('status', 'unpaid')->count(),
+                'pending_pembayaran' => \App\Models\Pembayaran::where('status', 'pending')->count(),
+            ];
+        } elseif ($user->role === 'siswa') {
+            $stats = [
+                'total_tagihan' => \App\Models\Tagihan::where('user_id', $user->id)
+                    ->where('status', 'unpaid')
+                    ->count(),
+                'total_paid' => \App\Models\Pembayaran::where('user_id', $user->id)
+                    ->where('status', 'paid')
+                    ->sum('jumlah_bayar'),
+                'pending_pembayaran' => \App\Models\Pembayaran::where('user_id', $user->id)
+                    ->where('status', 'pending')
+                    ->count(),
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    })->name('dashboard.stats');
+
+    // Get tagihan by siswa
+    Route::get('/tagihan/siswa/{user_id}', function ($user_id) {
+        $tagihan = Tagihan::where('user_id', $user_id)
+            ->with('kategori')
+            ->where('status', 'unpaid')
+            ->get()
+            ->map(function ($tagihan) {
+                return [
+                    'id' => $tagihan->id,
+                    'kategori' => $tagihan->kategori->nama_kategori,
+                    'jumlah' => $tagihan->jumlah_tagihan,
+                    'jatuh_tempo' => $tagihan->tanggal_jatuh_tempo->format('d/m/Y'),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $tagihan
+        ]);
+    })->name('tagihan.siswa');
+});
+
+// ==================== DEBUG ROUTES (Local Only) ====================
 if (app()->environment('local')) {
-    
-    // Test login dengan password tertentu
     Route::get('/debug-test-login/{email}', function ($email) {
         $user = \App\Models\User::where('email', $email)->first();
-        
+
         if (!$user) {
             return "User tidak ditemukan";
         }
@@ -152,8 +319,7 @@ if (app()->environment('local')) {
         ]);
     });
 
-    // Test password match
-    Route::post('/debug-check-password', function (Illuminate\Http\Request $request) {
+    Route::post('/debug-check-password', function (\Illuminate\Http\Request $request) {
         $request->validate([
             'email' => 'required|email',
             'password' => 'required'
@@ -165,9 +331,9 @@ if (app()->environment('local')) {
             return response()->json(['error' => 'User tidak ditemukan'], 404);
         }
 
-        $matches = Hash::check($request->password, $user->password);
+        $matches = \Illuminate\Support\Facades\Hash::check($request->password, $user->password);
 
-        Log::info('Password check debug', [
+        \Illuminate\Support\Facades\Log::info('Password check debug', [
             'email' => $request->email,
             'password_length' => strlen($request->password),
             'hash_preview' => substr($user->password, 0, 30) . '...',
@@ -183,7 +349,6 @@ if (app()->environment('local')) {
         ]);
     });
 
-    // Manual reset password (bypass reset flow)
     Route::get('/debug-force-reset/{email}/{password}', function ($email, $password) {
         $user = \App\Models\User::where('email', $email)->first();
 
@@ -192,15 +357,15 @@ if (app()->environment('local')) {
         }
 
         $oldHash = $user->password;
-        $newHash = Hash::make($password);
+        $newHash = \Illuminate\Support\Facades\Hash::make($password);
 
         $user->password = $newHash;
         $user->save();
         $user->refresh();
 
-        $canLogin = Hash::check($password, $user->password);
+        $canLogin = \Illuminate\Support\Facades\Hash::check($password, $user->password);
 
-        Log::info('Force password reset', [
+        \Illuminate\Support\Facades\Log::info('Force password reset', [
             'email' => $email,
             'new_password' => $password,
             'old_hash' => substr($oldHash, 0, 20) . '...',
@@ -217,16 +382,15 @@ if (app()->environment('local')) {
             'new_hash_preview' => substr($user->password, 0, 30) . '...',
             'hash_changed' => $oldHash !== $user->password,
             'verification_test' => $canLogin ? '✅ PASS' : '❌ FAIL',
-            'message' => $canLogin 
-                ? "Password berhasil diubah ke: {$password}" 
+            'message' => $canLogin
+                ? "Password berhasil diubah ke: {$password}"
                 : "PASSWORD UPDATE GAGAL! Hash tersimpan tapi tidak bisa diverifikasi"
         ]);
     });
 
-    // Cek semua tokens aktif
     Route::get('/debug-reset-tokens', function () {
-        $tokens = DB::table('password_reset_tokens')->get();
-        
+        $tokens = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->get();
+
         return response()->json([
             'total_tokens' => $tokens->count(),
             'tokens' => $tokens->map(function ($token) {
@@ -241,13 +405,40 @@ if (app()->environment('local')) {
         ]);
     });
 
-    // Clear semua tokens
     Route::get('/debug-clear-tokens', function () {
-        $count = DB::table('password_reset_tokens')->count();
-        DB::table('password_reset_tokens')->truncate();
-        
+        $count = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->count();
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->truncate();
+
         return "Cleared {$count} tokens";
+    });
+
+    // Artisan commands via web
+    Route::get('/artisan/{command}', function ($command) {
+        try {
+            Artisan::call($command);
+            return Artisan::output();
+        } catch (\Exception $e) {
+            return "Error: " . $e->getMessage();
+        }
     });
 }
 
-require __DIR__ . '/auth.php';
+// ==================== FALLBACK ROUTE ====================
+Route::fallback(function () {
+    if (auth()->check()) {
+        $user = auth()->user();
+
+        switch ($user->role) {
+            case 'admin':
+                return redirect()->route('admin.dashboard');
+            case 'operator':
+                return redirect()->route('operator.dashboard');
+            case 'siswa':
+                return redirect()->route('siswa.dashboard');
+            default:
+                return redirect()->route('login');
+        }
+    }
+
+    return redirect()->route('login');
+});

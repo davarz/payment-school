@@ -9,19 +9,25 @@ class KategoriPembayaran extends Model
 {
     use HasFactory;
 
-    // TAMBAH INI
     protected $table = 'kategori_pembayaran';
+    
     protected $fillable = [
         'nama_kategori',
         'deskripsi',
         'jumlah',
         'tahun_ajaran',
         'semester',
+        'frekuensi',
+        'auto_generate',
         'status',
     ];
 
     protected $casts = [
         'jumlah' => 'decimal:2',
+        'auto_generate' => 'boolean',
+        'semester' => 'string',
+        'frekuensi' => 'string',
+        'status' => 'string',
     ];
 
     public function pembayaran()
