@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -16,9 +15,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'email_verified_at',
-        'remember_token',
-    ]; // Hapus field siswa karena sudah dipisah ke tabel siswa
+        'role',
+    ];
     
     protected $hidden = [
         'password',
@@ -30,13 +28,28 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    // Relationship dengan Siswa
+    // Method untuk cek role
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->role === 'operator';
+    }
+
+    public function isSiswa(): bool
+    {
+        return $this->role === 'siswa';
+    }
+
+    // Relationships
     public function siswa()
     {
         return $this->hasOne(Siswa::class);
     }
 
-    // Relationship dengan Pembayaran
     public function pembayaran()
     {
         return $this->hasMany(Pembayaran::class);
@@ -45,26 +58,5 @@ class User extends Authenticatable
     public function tagihan()
     {
         return $this->hasMany(Tagihan::class);
-    }
-
-    // Method permission (jika masih menggunakan role di users table)
-    public function isAdmin()
-    {
-        return $this->role === 'admin';
-    }
-
-    public function isOperator()
-    {
-        return $this->role === 'operator';
-    }
-
-    public function isSiswa()
-    {
-        return $this->role === 'siswa';
-    }
-
-    public function sendPasswordResetNotification($token)
-    {
-        $this->notify(new ResetPasswordNotification($token));
     }
 }

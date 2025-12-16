@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('verified_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

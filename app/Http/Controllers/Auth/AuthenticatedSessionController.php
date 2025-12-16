@@ -7,6 +7,9 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -24,29 +27,42 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        try {
+            // Authenticate user
+            $request->authenticate();
 
-        $request->session()->regenerate();
+            $request->session()->regenerate();
 
-        $user = Auth::user();
-        
-        // Redirect berdasarkan role
-        switch ($user->role) {
-            case 'admin':
-                return redirect()->route('admin.dashboard');
-            case 'operator':
-                return redirect()->route('operator.dashboard');
-            case 'siswa':
-                // Cek status siswa
-                $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
-                if (!$siswa || $siswa->status_siswa !== 'aktif') {
-                    Auth::logout();
-                    return redirect()->route('login')
-                        ->withErrors(['email' => 'Akun Anda tidak aktif. Silakan hubungi administrator.']);
-                }
-                return redirect()->route('siswa.dashboard');
-            default:
+            $user = Auth::user();
+            
+            // Validasi user dan role
+            if (!$user) {
+                throw ValidationException::withMessages([
+                    'email' => 'Autentikasi gagal.',
+                ]);
+            }
+
+            // Redirect berdasarkan role dengan validasi
+            if (empty($user->role)) {
+                Log::warning('User logged in without role', ['user_id' => $user->id]);
                 return redirect()->route('dashboard');
+            }
+
+            // Redirect berdasarkan role
+            return match(strtolower($user->role)) {
+                'admin' => $this->safeRedirect('admin.dashboard'),
+                'operator' => $this->safeRedirect('operator.dashboard'),
+                'siswa' => $this->safeRedirect('siswa.dashboard'),
+                default => redirect()->route('dashboard'),
+            };
+
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Login error', ['error' => $e->getMessage()]);
+            return back()->withErrors([
+                'email' => 'Terjadi kesalahan saat login. Silakan coba lagi.',
+            ]);
         }
     }
 
@@ -55,12 +71,34 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        try {
+            Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-        $request->session()->regenerateToken();
+            return redirect('/');
+        } catch (\Exception $e) {
+            Log::error('Logout error', ['error' => $e->getMessage()]);
+            return redirect('/');
+        }
+    }
 
-        return redirect('/');
+    /**
+     * Safe redirect dengan pengecekan route
+     */
+    private function safeRedirect(string $routeName): RedirectResponse
+    {
+        try {
+            if (Route::has($routeName)) {
+                return redirect()->route($routeName);
+            }
+            
+            Log::warning("Route {$routeName} tidak ditemukan di AuthenticatedSessionController");
+            return redirect()->route('dashboard');
+        } catch (\Exception $e) {
+            Log::error("Error redirecting to {$routeName}", ['error' => $e->getMessage()]);
+            return redirect()->route('dashboard');
+        }
     }
 }

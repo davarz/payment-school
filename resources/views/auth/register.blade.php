@@ -64,6 +64,27 @@
 
                 <!-- Right Side - Registration Form -->
                 <div class="lg:w-3/5 p-8">
+                    <!-- Session Messages -->
+                    @if(session('success'))
+                    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                            <span class="text-green-700">{{ session('success') }}</span>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($errors->any())
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                            <span class="text-red-700">
+                                {{ $errors->first() }}
+                            </span>
+                        </div>
+                    </div>
+                    @endif
+
                     <form method="POST" action="{{ route('register') }}" class="space-y-4">
                         @csrf
 
@@ -77,17 +98,11 @@
                                     <input id="name" name="name" type="text" required 
                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
                                            placeholder="Nama lengkap"
-                                           value="{{ old('name') }}"
-                                           style="text-transform: uppercase;">
+                                           value="{{ old('name') }}">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                         <i class="fas fa-user text-gray-400"></i>
                                     </div>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1 flex items-center">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Nama akan otomatis menjadi huruf besar
-                                </div>
-                                <x-input-error :messages="$errors->get('name')" class="mt-1" />
                             </div>
 
                             <div>
@@ -103,7 +118,6 @@
                                         <i class="fas fa-envelope text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('email')" class="mt-1" />
                             </div>
                         </div>
 
@@ -122,7 +136,6 @@
                                         <i class="fas fa-id-card text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('nis')" class="mt-1" />
                             </div>
 
                             <div>
@@ -138,11 +151,45 @@
                                         <i class="fas fa-address-card text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('nik')" class="mt-1" />
                             </div>
                         </div>
 
-                        <!-- Row 3: Tahun Ajaran & Kelas -->
+                        <!-- Row 3: NISN & Jenis Kelamin -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="nisn" class="block text-sm font-medium text-gray-700 mb-1">
+                                    NISN
+                                </label>
+                                <div class="relative">
+                                    <input id="nisn" name="nisn" type="text" 
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                                           placeholder="Nomor Induk Siswa Nasional (opsional)"
+                                           value="{{ old('nisn') }}">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <i class="fas fa-id-badge text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="jenis_kelamin" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Jenis Kelamin *
+                                </label>
+                                <div class="relative">
+                                    <select id="jenis_kelamin" name="jenis_kelamin" required
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none transition duration-150">
+                                        <option value="">Pilih Jenis Kelamin</option>
+                                        <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-laki</option>
+                                        <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-chevron-down text-gray-400"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 4: Tahun Ajaran & Kelas -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="tahun_ajaran" class="block text-sm font-medium text-gray-700 mb-1">
@@ -166,7 +213,6 @@
                                         <i class="fas fa-chevron-down text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('tahun_ajaran')" class="mt-1" />
                             </div>
 
                             <div>
@@ -185,11 +231,10 @@
                                         <i class="fas fa-chevron-down text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('kelas')" class="mt-1" />
                             </div>
                         </div>
 
-                        <!-- Row 4: Tempat Lahir & Tanggal Lahir -->
+                        <!-- Row 5: Tempat Lahir & Tanggal Lahir -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="tempat_lahir" class="block text-sm font-medium text-gray-700 mb-1">
@@ -199,17 +244,11 @@
                                     <input id="tempat_lahir" name="tempat_lahir" type="text" required 
                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
                                            placeholder="Kota tempat lahir"
-                                           value="{{ old('tempat_lahir') }}"
-                                           style="text-transform: uppercase;">
+                                           value="{{ old('tempat_lahir') }}">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                         <i class="fas fa-map-marker-alt text-gray-400"></i>
                                     </div>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1 flex items-center">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Nama kota akan otomatis menjadi huruf besar
-                                </div>
-                                <x-input-error :messages="$errors->get('tempat_lahir')" class="mt-1" />
                             </div>
 
                             <div>
@@ -224,11 +263,10 @@
                                         <i class="fas fa-calendar-alt text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('tanggal_lahir')" class="mt-1" />
                             </div>
                         </div>
 
-                        <!-- Row 5: Telepon & Alamat -->
+                        <!-- Row 6: Telepon & Alamat -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="telepon" class="block text-sm font-medium text-gray-700 mb-1">
@@ -243,7 +281,6 @@
                                         <i class="fas fa-phone text-gray-400"></i>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('telepon')" class="mt-1" />
                             </div>
 
                             <div class="md:col-span-2">
@@ -252,17 +289,46 @@
                                 </label>
                                 <textarea id="alamat" name="alamat" rows="3" required
                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
-                                          placeholder="Alamat lengkap tempat tinggal"
-                                          style="text-transform: uppercase;">{{ old('alamat') }}</textarea>
-                                <div class="text-xs text-gray-500 mt-1 flex items-center">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Alamat akan otomatis menjadi huruf besar
-                                </div>
-                                <x-input-error :messages="$errors->get('alamat')" class="mt-1" />
+                                          placeholder="Alamat lengkap tempat tinggal">{{ old('alamat') }}</textarea>
                             </div>
                         </div>
 
-                        <!-- Row 6: Password & Confirm Password -->
+                        <!-- Row 7: Data Wali (Opsional) -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h3 class="text-lg font-medium text-gray-800 mb-3">Data Wali (Opsional)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="nama_wali" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Nama Wali
+                                    </label>
+                                    <input id="nama_wali" name="nama_wali" type="text"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                                           placeholder="Nama wali siswa"
+                                           value="{{ old('nama_wali') }}">
+                                </div>
+
+                                <div>
+                                    <label for="telepon_wali" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Telepon Wali
+                                    </label>
+                                    <input id="telepon_wali" name="telepon_wali" type="tel"
+                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                                           placeholder="08xxxxxxxxxx"
+                                           value="{{ old('telepon_wali') }}">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label for="alamat_wali" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Alamat Wali
+                                    </label>
+                                    <textarea id="alamat_wali" name="alamat_wali" rows="2"
+                                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                                              placeholder="Alamat wali siswa">{{ old('alamat_wali') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 8: Password & Confirm Password -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
@@ -278,7 +344,6 @@
                                         </button>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('password')" class="mt-1" />
                             </div>
 
                             <div>
@@ -295,29 +360,25 @@
                                         </button>
                                     </div>
                                 </div>
-                                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-1" />
                             </div>
                         </div>
 
-                        <!-- Password Strength Indicator -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-gray-700">Kekuatan Password:</span>
-                                <span id="password-strength-text" class="text-xs font-medium">-</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div id="password-strength-bar" class="h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <div class="text-xs text-gray-500 mt-2">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Gunakan kombinasi huruf, angka, dan simbol untuk keamanan maksimal
-                            </div>
+                        <!-- Terms and Conditions -->
+                        <div class="flex items-start">
+                            <input id="terms" name="terms" type="checkbox" required
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                            <label for="terms" class="ml-2 block text-sm text-gray-700">
+                                Saya menyetujui 
+                                <a href="#" class="text-blue-600 hover:text-blue-500">Syarat dan Ketentuan</a> 
+                                serta 
+                                <a href="#" class="text-blue-600 hover:text-blue-500">Kebijakan Privasi</a>
+                            </label>
                         </div>
 
                         <!-- Submit Button -->
                         <div class="pt-4">
                             <button type="submit" 
-                                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-150 ease-in-out transform hover:-translate-y-0.5">
+                                    class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition duration-150 ease-in-out">
                                 <i class="fas fa-user-plus mr-2"></i>
                                 Daftar Sekarang
                             </button>
@@ -330,56 +391,13 @@
         <!-- Footer -->
         <div class="text-center mt-6">
             <p class="text-sm text-gray-600">
-                © 2024 School Payment System. All rights reserved.
+                © {{ date('Y') }} School Payment System. All rights reserved.
             </p>
         </div>
     </div>
 
     <script>
-        // Auto Uppercase Functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Function to convert text to uppercase
-            function convertToUppercase(element) {
-                const cursorPosition = element.selectionStart;
-                element.value = element.value.toUpperCase();
-                element.setSelectionRange(cursorPosition, cursorPosition);
-            }
-
-            // Get fields that should be uppercase
-            const nameInput = document.getElementById('name');
-            const tempatLahirInput = document.getElementById('tempat_lahir');
-            const alamatTextarea = document.getElementById('alamat');
-
-            // Add uppercase functionality to name field
-            if (nameInput) {
-                nameInput.addEventListener('input', function() {
-                    convertToUppercase(this);
-                });
-                nameInput.addEventListener('blur', function() {
-                    convertToUppercase(this);
-                });
-            }
-
-            // Add uppercase functionality to tempat lahir field
-            if (tempatLahirInput) {
-                tempatLahirInput.addEventListener('input', function() {
-                    convertToUppercase(this);
-                });
-                tempatLahirInput.addEventListener('blur', function() {
-                    convertToUppercase(this);
-                });
-            }
-
-            // Add uppercase functionality to alamat field
-            if (alamatTextarea) {
-                alamatTextarea.addEventListener('input', function() {
-                    convertToUppercase(this);
-                });
-                alamatTextarea.addEventListener('blur', function() {
-                    convertToUppercase(this);
-                });
-            }
-
             // Show/Hide Password Functionality
             const passwordToggles = document.querySelectorAll('.password-toggle');
             
@@ -392,131 +410,46 @@
                         input.type = 'text';
                         icon.classList.remove('fa-eye');
                         icon.classList.add('fa-eye-slash');
-                        this.classList.add('text-blue-500');
                     } else {
                         input.type = 'password';
                         icon.classList.remove('fa-eye-slash');
                         icon.classList.add('fa-eye');
-                        this.classList.remove('text-blue-500');
                     }
-                    
-                    // Focus back to input for better UX
-                    input.focus();
                 });
             });
 
-            // Password Strength Indicator
-            const passwordInput = document.getElementById('password');
-            const strengthBar = document.getElementById('password-strength-bar');
-            const strengthText = document.getElementById('password-strength-text');
-
-            if (passwordInput && strengthBar && strengthText) {
-                passwordInput.addEventListener('input', function() {
-                    const password = this.value;
-                    const strength = calculatePasswordStrength(password);
+            // Validate minimum birth year (12 years old)
+            const tanggalLahirInput = document.getElementById('tanggal_lahir');
+            if (tanggalLahirInput) {
+                tanggalLahirInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    const minDate = new Date();
+                    minDate.setFullYear(today.getFullYear() - 12); // Minimum 12 years old
                     
-                    // Update progress bar
-                    strengthBar.style.width = strength.percentage + '%';
-                    strengthBar.className = 'h-2 rounded-full transition-all duration-300 ' + strength.color;
-                    
-                    // Update text
-                    strengthText.textContent = strength.text;
-                    strengthText.className = 'text-xs font-medium ' + strength.textColor;
-                });
-
-                function calculatePasswordStrength(password) {
-                    let score = 0;
-                    
-                    // Length check
-                    if (password.length >= 8) score += 25;
-                    if (password.length >= 12) score += 10;
-                    
-                    // Character variety
-                    if (/[a-z]/.test(password)) score += 10;
-                    if (/[A-Z]/.test(password)) score += 15;
-                    if (/[0-9]/.test(password)) score += 15;
-                    if (/[^A-Za-z0-9]/.test(password)) score += 25;
-                    
-                    // Bonus for mixed case and numbers
-                    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 10;
-                    if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 10;
-
-                    // Cap at 100%
-                    score = Math.min(score, 100);
-
-                    // Determine strength level
-                    if (score === 0) {
-                        return { percentage: 0, color: 'bg-gray-300', text: 'Kosong', textColor: 'text-gray-500' };
-                    } else if (score < 40) {
-                        return { percentage: score, color: 'bg-red-500', text: 'Lemah', textColor: 'text-red-600' };
-                    } else if (score < 70) {
-                        return { percentage: score, color: 'bg-yellow-500', text: 'Cukup', textColor: 'text-yellow-600' };
-                    } else if (score < 90) {
-                        return { percentage: score, color: 'bg-blue-500', text: 'Kuat', textColor: 'text-blue-600' };
-                    } else {
-                        return { percentage: score, color: 'bg-green-500', text: 'Sangat Kuat', textColor: 'text-green-600' };
+                    if (selectedDate > minDate) {
+                        alert('Siswa harus berusia minimal 12 tahun');
+                        this.value = '';
                     }
-                }
+                });
             }
 
-            // Real-time validation feedback
-            const inputs = document.querySelectorAll('input, select, textarea');
-            
-            inputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value.trim() === '') {
-                        this.classList.add('border-red-300');
-                    } else {
-                        this.classList.remove('border-red-300');
-                    }
-                });
-
+            // Auto-format phone numbers
+            const phoneInputs = document.querySelectorAll('input[type="tel"]');
+            phoneInputs.forEach(input => {
                 input.addEventListener('input', function() {
-                    if (this.value.trim() !== '') {
-                        this.classList.remove('border-red-300');
-                        this.classList.add('border-green-300');
-                    } else {
-                        this.classList.remove('border-green-300');
-                    }
-                });
-            });
-
-            // Email validation
-            const emailInput = document.getElementById('email');
-            if (emailInput) {
-                emailInput.addEventListener('blur', function() {
-                    const email = this.value;
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    
-                    if (email && !emailRegex.test(email)) {
-                        this.classList.add('border-red-300');
-                    } else if (email) {
-                        this.classList.remove('border-red-300');
-                        this.classList.add('border-green-300');
-                    }
-                });
-            }
-
-            // Password confirmation validation
-            const password = document.getElementById('password');
-            const confirmPassword = document.getElementById('password_confirmation');
-            
-            if (password && confirmPassword) {
-                function validatePasswordMatch() {
-                    if (password.value && confirmPassword.value) {
-                        if (password.value === confirmPassword.value) {
-                            confirmPassword.classList.remove('border-red-300');
-                            confirmPassword.classList.add('border-green-300');
-                        } else {
-                            confirmPassword.classList.remove('border-green-300');
-                            confirmPassword.classList.add('border-red-300');
+                    let value = this.value.replace(/\D/g, '');
+                    if (value.length > 0) {
+                        if (!value.startsWith('0')) {
+                            value = '0' + value;
+                        }
+                        if (value.length > 12) {
+                            value = value.substring(0, 13);
                         }
                     }
-                }
-
-                password.addEventListener('input', validatePasswordMatch);
-                confirmPassword.addEventListener('input', validatePasswordMatch);
-            }
+                    this.value = value;
+                });
+            });
         });
     </script>
 </body>

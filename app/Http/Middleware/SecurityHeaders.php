@@ -57,59 +57,35 @@ class SecurityHeaders
      * Generate Content Security Policy header berdasarkan environment
      */
     private function getCSPHeader(): string
-    {
-        // Default CSP untuk development
+{
+    $csp = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://code.jquery.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+        "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com",
+        "img-src 'self' data: https:",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+    ];
+
+    if (app()->environment('production')) {
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https:",
-            "font-src 'self' data:",
+            "script-src 'self'",
+            "style-src 'self'",
+            "font-src 'self'",
+            "img-src 'self' data:",
             "connect-src 'self'",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
         ];
-
-        // Tambahkan external resources jika diperlukan
-        $externalScripts = [
-            'https://cdn.tailwindcss.com',
-            'https://cdnjs.cloudflare.com',
-            'https://code.jquery.com',
-        ];
-
-        $externalStyles = [
-            'https://cdn.tailwindcss.com',
-            'https://cdnjs.cloudflare.com',
-            'https://fonts.googleapis.com',
-        ];
-
-        $externalFonts = [
-            'https://cdnjs.cloudflare.com',
-            'https://fonts.gstatic.com',
-        ];
-
-        // Untuk production, batasi lebih ketat
-        if (app()->environment('production')) {
-            $csp = [
-                "default-src 'self'",
-                "script-src 'self'",
-                "style-src 'self'",
-                "img-src 'self' data:",
-                "font-src 'self'",
-                "connect-src 'self'",
-                "frame-ancestors 'none'",
-                "base-uri 'self'",
-                "form-action 'self'",
-            ];
-            
-            // Tambahkan nonce untuk inline scripts/styles jika menggunakan Vite/Webpack
-            // $csp[1] = "script-src 'self' 'nonce-" . $this->generateNonce() . "'";
-            // $csp[2] = "style-src 'self' 'nonce-" . $this->generateNonce() . "'";
-        }
-
-        return implode('; ', $csp);
     }
+
+    return implode('; ', $csp);
+}
 
     /**
      * Generate nonce untuk CSP (jika diperlukan)
