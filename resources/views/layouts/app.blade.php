@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100">
+
     @auth
         @if(auth()->user()->role === 'admin' || auth()->user()->role === 'operator')
             @include('layouts.admin-sidebar')
@@ -16,7 +17,7 @@
         @endif
     @endauth
 
-    <main class="@auth @if(auth()->user()->role === 'admin' || auth()->user()->role === 'operator') ml-64 @endif @endauth">
+    <main class="@auth @if(auth()->user()->role === 'admin' || auth()->user()->role === 'operator') ml-0 lg:ml-64 @endif @endauth pt-16 lg:pt-0">
         @yield('content')
     </main>
 

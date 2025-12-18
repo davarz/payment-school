@@ -56,13 +56,20 @@ class DashboardController extends Controller
     public function tagihan()
     {
         $user = auth()->user();
-        
+
         // Ambil semua tagihan user
         $tagihan = Tagihan::where('user_id', $user->id)
             ->with('kategori')
             ->orderBy('tanggal_jatuh_tempo', 'asc')
             ->get();
-        
+
+        // Ambil pembayaran terbaru user
+        $pembayaran = Pembayaran::where('user_id', $user->id)
+            ->with('kategori')
+            ->latest()
+            ->take(5)
+            ->get();
+
         // Ambil kategori aktif untuk form pembuatan tagihan
         $kategori = KategoriPembayaran::where('status', 'active')->get();
 
@@ -71,7 +78,8 @@ class DashboardController extends Controller
         $totalPaid = $tagihan->where('status', 'paid')->sum('jumlah_tagihan');
 
         return view('siswa.tagihan', compact(
-            'tagihan', 
+            'tagihan',
+            'pembayaran',
             'kategori',
             'totalTagihan',
             'totalPaid'

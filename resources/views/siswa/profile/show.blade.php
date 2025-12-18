@@ -144,14 +144,6 @@
             <!-- Account Stats -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik Akun</h3>
-                
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Total Pembayaran</span>
-                        <span class="font-semibold text-green-600">
-                            Rp {{ number_format($user->pembayaran->where('status', 'verified')->sum('jumlah_bayar'), 0, ',', '.') }}
-                        </span>
-                    </div>
                     
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Transaksi Sukses</span>
@@ -180,13 +172,13 @@
                         Dashboard Utama
                     </a>
                     
-                    <a href="{{ route('siswa.tagihan') }}" 
+                    <a href="{{ route('siswa.tagihan.index') }}" 
                        class="flex items-center text-blue-700 hover:text-blue-800 transition-colors">
                         <i class="fas fa-file-invoice mr-2"></i>
                         Lihat Tagihan
                     </a>
                     
-                    <a href="{{ route('siswa.transaksi') }}" 
+                    <a href="{{ route('siswa.transaksi.index') }}" 
                        class="flex items-center text-blue-700 hover:text-blue-800 transition-colors">
                         <i class="fas fa-history mr-2"></i>
                         Riwayat Transaksi

@@ -105,7 +105,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/{tagihan}/edit', [AdminTagihanController::class, 'edit'])->name('edit');
         Route::put('/{tagihan}', [AdminTagihanController::class, 'update'])->name('update');
         Route::delete('/{tagihan}', [AdminTagihanController::class, 'destroy'])->name('destroy');
-        Route::post('/generate-bills', [AdminTagihanController::class, 'generateBills'])->name('generate.bills');
+        Route::post('/generate-bills', [AdminTagihanController::class, 'generateBills'])->name('generate-bills');
         Route::post('/{tagihan}/mark-paid', [AdminTagihanController::class, 'markAsPaid'])->name('mark.paid');
         Route::post('/{tagihan}/cancel', [AdminTagihanController::class, 'cancel'])->name('cancel');
     });
