@@ -3,55 +3,48 @@
 @section('title', 'Dashboard Admin')
 
 @section('content')
-<div class="space-y-6">
+<div>
     <!-- Page Header -->
-    <x-page-header
+    <x-page-header 
         title="Dashboard Admin"
-        subtitle="Pantau statistik pembayaran dan aktivitas sekolah secara real-time"
-        icon="fa-chart-line"
+        subtitle="Pantau statistik dan aktivitas pembayaran sekolah"
+        icon="fa-tachometer-alt"
     />
 
-    <!-- Key Metrics Grid - 4 Column -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Total Siswa Card -->
-        <x-stats-card
-            label="Total Siswa Aktif"
-            value="{{ $totalSiswa ?? 0 }}"
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <x-stats-card 
+            label="Total Siswa Aktif" 
+            value="{{ $totalSiswa }}"
             subtitle="Siswa terdaftar"
             color="blue"
             icon="fa-users"
         />
-
-        <!-- Total Pembayaran Card -->
-        <x-stats-card
-            label="Total Pembayaran Masuk"
-            value="Rp {{ number_format($totalPembayaran ?? 0, 0, ',', '.') }}"
-            subtitle="Bulan ini"
+        <x-stats-card 
+            label="Total Pembayaran" 
+            value="Rp {{ number_format($totalPembayaran, 0, ',', '.') }}"
+            subtitle="Sudah diterima"
             color="green"
             icon="fa-money-bill-wave"
         />
-
-        <!-- Tagihan Pending Card -->
-        <x-stats-card
-            label="Tagihan Belum Dibayar"
-            value="{{ $totalTagihan ?? 0 }}"
-            subtitle="Butuh follow-up"
+        <x-stats-card 
+            label="Tagihan Belum Dibayar" 
+            value="{{ $totalTagihan }}"
+            subtitle="Menunggu pembayaran"
             color="orange"
-            icon="fa-hourglass-half"
+            icon="fa-clock"
         />
-
-        <!-- Pembayaran Pending Card -->
-        <x-stats-card
-            label="Verifikasi Pending"
-            value="{{ $pembayaranPending ?? 0 }}"
+        <x-stats-card 
+            label="Pembayaran Pending" 
+            value="{{ $pembayaranPending }}"
             subtitle="Menunggu verifikasi"
             color="red"
-            icon="fa-check-circle"
+            icon="fa-exclamation-circle"
         />
     </div>
 
     <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <!-- Quick Actions -->
         <div class="lg:col-span-1">
             <x-card>
@@ -115,7 +108,7 @@
                                 <td class="px-4 py-3 font-mono text-gray-900">{{ substr($p->kode_transaksi, 0, 8) }}...</td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center space-x-2">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($p->user->name) }}&size=32"
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($p->user->name) }}&size=32" 
                                              class="w-8 h-8 rounded-full" alt="{{ $p->user->name }}">
                                         <span class="text-gray-900 font-medium">{{ $p->user->name }}</span>
                                     </div>
@@ -192,7 +185,7 @@
                             'qris' => ['label' => 'QRIS', 'color' => 'purple', 'count' => $recentPembayaran->where('metode_bayar', 'qris')->count()],
                         ];
                     @endphp
-
+                    
                     @foreach($methods as $method)
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div class="flex items-center space-x-3">
@@ -208,3 +201,4 @@
     </div>
 </div>
 @endsection
+                <p class="text-purple-100 text-xs">Tagihan</p>

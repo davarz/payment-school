@@ -1,63 +1,157 @@
-<nav class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-            <!-- Logo -->
-            <div class="flex items-center">
-                <a href="{{ route('siswa.dashboard') }}" class="flex items-center space-x-2 sm:space-x-3">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center shadow-sm">
-                        <i class="fas fa-graduation-cap text-white text-base sm:text-lg"></i>
-                    </div>
-                    <span class="text-base sm:text-xl font-bold text-gray-900 hidden sm:block">SchoolPay</span>
-                </a>
+<!-- Responsive Mobile & Desktop Navbar for Siswa -->
+<nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-gray-100/50 shadow-sm">
+    <div class="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <!-- Left: Logo & Brand -->
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+                <i class="fas fa-graduation-cap text-white text-lg"></i>
             </div>
-
-            <!-- Desktop Navigation -->
-            <div class="hidden lg:flex items-center space-x-6 sm:space-x-8">
-                <a href="{{ route('siswa.dashboard') }}"
-                   class="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 {{ request()->routeIs('siswa.dashboard') ? 'text-blue-600' : '' }}">
-                    <span class="hidden sm:inline">Dashboard</span>
-                    <span class="sm:hidden"><i class="fas fa-tachometer-alt"></i></span>
-                </a>
-                <a href="{{ route('siswa.tagihan.index') }}"
-                   class="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 {{ request()->routeIs('siswa.tagihan') ? 'text-blue-600' : '' }}">
-                    <span class="hidden sm:inline">Tagihan</span>
-                    <span class="sm:hidden"><i class="fas fa-receipt"></i></span>
-                </a>
-                <a href="{{ route('siswa.transaksi.index') }}"
-                   class="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 {{ request()->routeIs('siswa.transaksi') ? 'text-blue-600' : '' }}">
-                    <span class="hidden sm:inline">Riwayat</span>
-                    <span class="sm:hidden"><i class="fas fa-history"></i></span>
-                </a>
-                <a href="{{ route('siswa.profile.show') }}"
-                   class="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200 {{ request()->routeIs('siswa.profile.*') ? 'text-blue-600' : '' }}">
-                    <span class="hidden sm:inline">Profile</span>
-                    <span class="sm:hidden"><i class="fas fa-user"></i></span>
-                </a>
+            <div class="hidden sm:block">
+                <h1 class="font-bold text-gray-900">SchoolPay</h1>
+                <p class="text-xs text-gray-500">Portal Siswa</p>
             </div>
+        </div>
 
-            <!-- Right Section -->
-            <div class="flex items-center space-x-2 sm:space-x-4">
-                <!-- User Info Desktop -->
-                <div class="hidden md:flex items-center space-x-2 sm:space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-sm">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+        <!-- Center: Navigation Links (Desktop Only) -->
+        <div class="hidden md:flex items-center space-x-1">
+            <a href="{{ route('siswa.dashboard') }}" class="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition {{ request()->routeIs('siswa.dashboard') ? 'text-blue-600 border-b-2 border-blue-600' : '' }}">
+                <i class="fas fa-home mr-2"></i> Dashboard
+            </a>
+            <a href="{{ route('siswa.tagihan.index') }}" class="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition {{ request()->routeIs('siswa.tagihan.*') ? 'text-blue-600 border-b-2 border-blue-600' : '' }}">
+                <i class="fas fa-receipt mr-2"></i> Tagihan
+            </a>
+            <a href="{{ route('siswa.transaksi.index') }}" class="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition {{ request()->routeIs('siswa.transaksi.*') ? 'text-blue-600 border-b-2 border-blue-600' : '' }}">
+                <i class="fas fa-history mr-2"></i> Riwayat
+            </a>
+        </div>
+
+        <!-- Right: Notifications & User Menu -->
+        <div class="flex items-center space-x-4">
+            <!-- Mobile Menu Button -->
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+
+            <!-- Notifications -->
+            <div class="relative hidden sm:block">
+                <button class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" onclick="toggleNotifications()">
+                    <i class="fas fa-bell text-lg"></i>
+                    @if($pendingTagihanCount > 0)
+                    <span class="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+                    @endif
+                </button>
+                
+                <!-- Notifications Dropdown -->
+                <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+                    <div class="p-4 border-b border-gray-100">
+                        <h3 class="font-semibold text-gray-900">Notifikasi</h3>
                     </div>
-                    <div class="hidden sm:block">
-                        <p class="text-xs sm:text-sm font-medium text-gray-900 max-w-[80px] truncate">{{ auth()->user()->name }}</p>
-                        <p class="text-[10px] sm:text-xs text-gray-500">Siswa</p>
+                    <div class="max-h-96 overflow-y-auto">
+                        @if($pendingTagihanCount > 0)
+                        <div class="p-4 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition">
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-orange-100 rounded-lg">
+                                    <i class="fas fa-exclamation text-orange-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-900">{{ $pendingTagihanCount }} Tagihan Belum Dibayar</p>
+                                    <p class="text-xs text-gray-500">Segera lakukan pembayaran</p>
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                        <div class="p-8 text-center">
+                            <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                            <p class="text-gray-600 text-sm">Tidak ada notifikasi baru</p>
+                        </div>
+                        @endif
                     </div>
                 </div>
+            </div>
 
-                <!-- Logout Button Desktop -->
-                <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
-                    @csrf
-                    <button type="submit"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
-                        <span class="hidden sm:inline">Logout</span>
-                        <span class="sm:hidden"><i class="fas fa-sign-out-alt"></i></span>
-                    </button>
-                </form>
+            <!-- User Menu -->
+            <div class="relative">
+                <button onclick="toggleUserMenu()" class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition">
+                    <div class="hidden sm:block text-right">
+                        <p class="font-medium text-gray-900 text-sm">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-500">Siswa</p>
+                    </div>
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&color=3B82F6&background=DBEAFE" 
+                         alt="{{ auth()->user()->name }}" class="w-9 h-9 rounded-full">
+                </button>
 
+                <!-- User Dropdown Menu -->
+                <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+                    <div class="p-4 border-b border-gray-100">
+                        <p class="font-medium text-gray-900">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-500">{{ auth()->user()->email }}</p>
+                    </div>
+                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
+                        <i class="fas fa-user-circle mr-2"></i> Profil
+                    </a>
+                    <a href="{{ route('siswa.dashboard') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition md:hidden">
+                        <i class="fas fa-home mr-2"></i> Dashboard
+                    </a>
+                    <a href="{{ route('siswa.tagihan.index') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition md:hidden">
+                        <i class="fas fa-receipt mr-2"></i> Tagihan
+                    </a>
+                    <hr class="my-2">
+                    <form method="POST" action="{{ route('logout') }}" class="block">
+                        @csrf
+                        <button type="submit" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm transition">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Keluar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200 bg-gray-50">
+        <div class="px-4 py-3 space-y-2">
+            <a href="{{ route('siswa.dashboard') }}" class="block px-4 py-2 text-gray-700 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+                <i class="fas fa-home mr-2"></i> Dashboard
+            </a>
+            <a href="{{ route('siswa.tagihan.index') }}" class="block px-4 py-2 text-gray-700 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+                <i class="fas fa-receipt mr-2"></i> Tagihan
+            </a>
+            <a href="{{ route('siswa.transaksi.index') }}" class="block px-4 py-2 text-gray-700 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition">
+                <i class="fas fa-history mr-2"></i> Riwayat
+            </a>
+        </div>
+    </div>
+</nav>
+
+<script>
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobile-menu');
+        menu.classList.toggle('hidden');
+    }
+
+    function toggleNotifications() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.classList.toggle('hidden');
+        document.getElementById('user-menu').classList.add('hidden');
+    }
+
+    function toggleUserMenu() {
+        const menu = document.getElementById('user-menu');
+        menu.classList.toggle('hidden');
+        document.getElementById('notifications-dropdown')?.classList.add('hidden');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const notifications = document.getElementById('notifications-dropdown');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (event.target.closest('.relative') === null) {
+            notifications?.classList.add('hidden');
+            userMenu?.classList.add('hidden');
+        }
+    });
+</script>
                 <!-- Mobile Menu Button -->
                 <button id="siswa-mobile-menu-button" class="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100">
                     <i class="fas fa-bars"></i>
