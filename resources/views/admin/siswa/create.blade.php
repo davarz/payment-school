@@ -1,124 +1,179 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Siswa')
+@section('title', 'Tambah Siswa Baru')
 
 @section('content')
-<div class="pt-16 px-6">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Tambah Siswa Baru</h2>
+<div class="space-y-6">
+    <!-- Page Header -->
+    <x-page-header
+        title="Tambah Siswa Baru"
+        subtitle="Daftarkan data siswa baru ke dalam sistem"
+        icon="fa-user-plus"
+    />
 
-            <!-- Info Auto Password -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div class="flex">
-                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+    <!-- Form Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Form Header -->
+        <div class="p-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-gray-200">
+            <div class="flex items-start space-x-3">
+                <i class="fas fa-lightbulb text-blue-600 mt-1 text-lg"></i>
+                <div>
+                    <h3 class="font-semibold text-blue-900">Password Otomatis</h3>
+                    <p class="text-sm text-blue-800 mt-1">Password akan digenerate dari <strong>3 huruf pertama nama + 4 digit terakhir NIS</strong>. Contoh: Nama "Dava" + NIS "2010809" = Password "dav0809"</p>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ route('admin.siswa.store') }}" method="POST" class="p-6 space-y-6">
+            @csrf
+
+            <!-- Personal Data Section -->
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
+                    <i class="fas fa-user text-blue-600 mr-2"></i>
+                    Data Pribadi
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nama Lengkap -->
                     <div>
-                        <h4 class="text-sm font-medium text-blue-800">Info Login Siswa</h4>
-                        <p class="text-sm text-blue-700 mt-1">
-                            Password akan digenerate otomatis dari <strong>3 huruf pertama nama + 4 digit terakhir NIS</strong>.
-                            Contoh: <strong>Dava</strong> + <strong>0809</strong> = <strong>dav0809</strong>
-                        </p>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Nama Lengkap <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" required value="{{ old('name') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Contoh: Ahmad Wijaya">
+                        @error('name')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Email <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" name="email" required value="{{ old('email') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="ahmad@school.com">
+                        @error('email')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- NIS -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            NIS <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="nis" required value="{{ old('nis') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Nomor Induk Siswa">
+                        @error('nis')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- NISN -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            NISN
+                        </label>
+                        <input type="text" name="nisn" value="{{ old('nisn') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Nomor Induk Siswa Nasional (opsional)">
+                        @error('nisn')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
             </div>
 
-            <form action="{{ route('admin.siswa.store') }}" method="POST">
-                @csrf
+            <!-- Academic Data Section -->
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200 flex items-center">
+                    <i class="fas fa-graduation-cap text-blue-600 mr-2"></i>
+                    Data Akademik
+                </h3>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Data Pribadi -->
-                    <div class="md:col-span-2">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Data Pribadi</h3>
-                    </div>
-
+                    <!-- Kelas -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Nama Lengkap *</label>
-                        <input type="text" name="name" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Contoh: Dava Setiawan">
-                        <p class="text-xs text-gray-500 mt-1">Untuk generate password</p>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Kelas <span class="text-red-500">*</span>
+                        </label>
+                        <select name="kelas" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                            <option value="">-- Pilih Kelas --</option>
+                            <option value="10" {{ old('kelas') === '10' ? 'selected' : '' }}>Kelas 10</option>
+                            <option value="11" {{ old('kelas') === '11' ? 'selected' : '' }}>Kelas 11</option>
+                            <option value="12" {{ old('kelas') === '12' ? 'selected' : '' }}>Kelas 12</option>
+                        </select>
+                        @error('kelas')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
+                    <!-- Tahun Ajaran -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Email *</label>
-                        <input type="email" name="email" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="dava@school.com">
-                        <p class="text-xs text-gray-500 mt-1">Untuk login</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">NIS *</label>
-                        <input type="text" name="nis" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Contoh: 190809">
-                        <p class="text-xs text-gray-500 mt-1">4 digit terakhir untuk password</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">NIK *</label>
-                        <input type="text" name="nik" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <!-- Data Sekolah -->
-                    <div class="md:col-span-2">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Data Sekolah</h3>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Tahun Ajaran *</label>
-                        <input type="text" name="tahun_ajaran" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Tahun Ajaran <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="tahun_ajaran" required value="{{ old('tahun_ajaran') }}"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             placeholder="2024/2025">
+                        @error('tahun_ajaran')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
+                    <!-- Jenis Kelamin -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Kelas *</label>
-                        <input type="text" name="kelas" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="X IPA 1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Jenis Kelamin <span class="text-red-500">*</span>
+                        </label>
+                        <select name="jenis_kelamin" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                            <option value="">-- Pilih Jenis Kelamin --</option>
+                            <option value="L" {{ old('jenis_kelamin') === 'L' ? 'selected' : '' }}>Laki-laki</option>
+                            <option value="P" {{ old('jenis_kelamin') === 'P' ? 'selected' : '' }}>Perempuan</option>
+                        </select>
+                        @error('jenis_kelamin')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    <!-- Kontak -->
-                    <div class="md:col-span-2">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Kontak & Lainnya</h3>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Alamat *</label>
-                        <textarea name="alamat" rows="3" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
-                    </div>
-
+                    <!-- Status Siswa -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Telepon *</label>
-                        <input type="text" name="telepon" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Tempat Lahir *</label>
-                        <input type="text" name="tempat_lahir" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Tanggal Lahir *</label>
-                        <input type="date" name="tanggal_lahir" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Status Siswa <span class="text-red-500">*</span>
+                        </label>
+                        <select name="status_siswa" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                            <option value="">-- Pilih Status --</option>
+                            <option value="aktif" {{ old('status_siswa') === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                            <option value="pindah" {{ old('status_siswa') === 'pindah' ? 'selected' : '' }}>Pindah</option>
+                            <option value="dikeluarkan" {{ old('status_siswa') === 'dikeluarkan' ? 'selected' : '' }}>Dikeluarkan</option>
+                        </select>
+                        @error('status_siswa')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-8 flex justify-end space-x-3">
-                    <a href="{{ route('admin.siswa.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
-                        Batal
-                    </a>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-                        Simpan Siswa
-                    </button>
-                </div>
-            </form>
-        </div>
+            <!-- Button Section -->
+            <div class="flex items-center space-x-3 pt-6 border-t border-gray-200">
+                <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-save mr-2"></i>
+                    Simpan Data Siswa
+                </button>
+                <a href="{{ route('admin.siswa.index') }}" class="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+                    <i class="fas fa-times mr-2"></i>
+                    Batal
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

@@ -3,7 +3,7 @@
 @section('title', 'Backup & Export Data')
 
 @section('content')
-<div class="pt-16 px-6">
+<div class="px-6">
     <div class="max-w-4xl mx-auto">
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">Backup & Export Data</h2>

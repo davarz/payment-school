@@ -3,126 +3,179 @@
 @section('title', 'Data Siswa')
 
 @section('content')
-    <div class="pt-16 px-6">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">Data Siswa</h2>
-            <a href="{{ route('admin.siswa.create') }}"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
-                <i class="fas fa-plus mr-2"></i> Tambah Siswa
-            </a>
-        </div>
-
-        <!-- Search & Filter -->
-        <div class="bg-white rounded-lg shadow p-4 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <input type="text" id="searchInput" placeholder="Cari nama/NIS..."
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-                <div>
-                    <select id="statusFilter"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="pindah">Pindah</option>
-                        <option value="dikeluarkan">Dikeluarkan</option>
-                    </select>
-                </div>
-                <div>
-                    <select id="kelasFilter"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">Semua Kelas</option>
-                        @foreach($kelasList as $kelas)
-                            <option value="{{ $kelas }}">{{ $kelas }}</option>
-                        @endforeach
-                    </select>
-                </div>
+<div class="space-y-8 pb-8">
+    <!-- Page Header -->
+    <div class="border-b border-gray-200 pb-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900">Data Siswa</h1>
+                <p class="text-gray-600 mt-2">Kelola data siswa, ubah informasi, dan monitor status keseluruhan</p>
             </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">NIS</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kelas</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Password</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200" id="siswaTable">
-                        @foreach($siswa as $item)
-                                        <tr class="siswa-row cursor-pointer hover:bg-gray-50 transition-all duration-200"
-                                            data-status="{{ $item->status_siswa }}" data-kelas="{{ $item->kelas }}"
-                                            onclick="showDetailById({{ $item->id }})">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {{ $item->nis }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <div class="flex items-center">
-                                                    {{ $item->name }}
-                                                    <i class="fas fa-external-link-alt ml-2 text-gray-400 text-xs"></i>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {{ $item->kelas }}
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <div class="flex items-center">
-                                                    <span id="password-{{ $item->id }}" class="text-gray-600">••••••••</span>
-                                                    <button
-                                                        onclick="togglePassword({{ $item->id }}, '{{ $item->name }}', '{{ $item->nis }}')"
-                                                        class="ml-2 text-blue-600 hover:text-blue-900 text-xs" title="Lihat Password">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <span
-                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                    {{ $item->status_siswa == 'aktif' ? 'bg-green-100 text-green-800' :
-                            ($item->status_siswa == 'pindah' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                    {{ ucfirst($item->status_siswa) }}
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
-                                                onclick="event.stopPropagation()">
-                                                <a href="{{ route('admin.siswa.edit', $item->id) }}"
-                                                    class="text-blue-600 hover:text-blue-900" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form action="{{ route('admin.siswa.reset-password', $item->id) }}" method="POST"
-                                                    class="inline">
-                                                    @csrf
-                                                    <button type="submit" class="text-yellow-600 hover:text-yellow-900"
-                                                        onclick="return confirm('Reset password?')" title="Reset Password">
-                                                        <i class="fas fa-key"></i>
-                                                    </button>
-                                                </form>
-                                                <form action="{{ route('admin.siswa.destroy', $item->id) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900"
-                                                        onclick="return confirm('Hapus siswa?')" title="Hapus">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="px-6 py-4 border-t border-gray-200">
-                {{ $siswa->links() }}
+            <div class="text-blue-600 text-4xl">
+                <i class="fas fa-users"></i>
             </div>
         </div>
     </div>
+
+    <!-- Filter & Search Card -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-filter"></i>
+                <span>Pencarian & Filter</span>
+            </h2>
+        </div>
+        <div class="p-6">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Cari Nama/NIS</label>
+                    <input type="text" name="search" placeholder="Ketik nama atau NIS..." value="{{ request('search') }}"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                        <option value="">Semua Status</option>
+                        <option value="aktif" {{ request('status') === 'aktif' ? 'selected' : '' }}>Aktif</option>
+                        <option value="pindah" {{ request('status') === 'pindah' ? 'selected' : '' }}>Pindah</option>
+                        <option value="dikeluarkan" {{ request('status') === 'dikeluarkan' ? 'selected' : '' }}>Dikeluarkan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kelas</label>
+                    <select name="kelas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                        <option value="">Semua Kelas</option>
+                        @if(isset($kelasList))
+                            @foreach($kelasList as $kelas)
+                                <option value="{{ $kelas }}" {{ request('kelas') === $kelas ? 'selected' : '' }}>{{ $kelas }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                        <i class="fas fa-search mr-2"></i>Cari
+                    </button>
+                    @if(request()->hasAny(['search', 'status', 'kelas']))
+                    <a href="{{ route('admin.siswa.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium text-gray-700">
+                        Reset
+                    </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fas fa-list"></i>
+                <span>Daftar Siswa</span>
+                <span class="text-sm bg-blue-500 px-3 py-1 rounded-full">{{ $siswa->count() ?? 0 }}</span>
+            </h2>
+            <a href="{{ route('admin.siswa.create') }}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold">
+                <i class="fas fa-plus mr-2"></i>Tambah Siswa
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            @if($siswa && $siswa->count() > 0)
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-700">NIS</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-700">Nama Lengkap</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-700">Kelas</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-700">Email</th>
+                            <th class="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($siswa as $item)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="font-mono font-semibold text-gray-900">{{ $item->nis }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($item->user->name) }}&background=3B82F6&color=fff&size=40"
+                                        class="w-10 h-10 rounded-full" alt="{{ $item->user->name }}">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ $item->user->name }}</p>
+                                        <p class="text-xs text-gray-600">{{ $item->user->email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">{{ $item->kelas }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($item->status_siswa === 'aktif')
+                                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                                        <i class="fas fa-check-circle"></i> Aktif
+                                    </span>
+                                @elseif($item->status_siswa === 'pindah')
+                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                                        <i class="fas fa-arrow-right"></i> Pindah
+                                    </span>
+                                @else
+                                    <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
+                                        <i class="fas fa-times-circle"></i> Dikeluarkan
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-gray-600">
+                                {{ $item->user->email }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-2">
+                                    <a href="{{ route('admin.siswa.edit', $item->id) }}" class="inline-flex items-center px-3 py-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition font-medium" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ route('admin.siswa.reset-password', $item->id) }}" method="POST" class="inline" onsubmit="return confirm('Reset password siswa ini?')">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center px-3 py-2 rounded-lg bg-amber-100 text-amber-600 hover:bg-amber-200 transition font-medium" title="Reset Password">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </form>
+                                    <button onclick="deleteConfirm({{ $item->id }})" class="inline-flex items-center px-3 py-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition font-medium" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <form id="delete-form-{{ $item->id }}" action="{{ route('admin.siswa.destroy', $item->id) }}" method="POST" style="display:none;">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <div class="text-center py-16">
+                    <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-600 text-lg font-medium">Belum ada data siswa</p>
+                    <p class="text-gray-500 text-sm mt-2">Mulai dengan menambahkan siswa baru ke dalam sistem</p>
+                    <a href="{{ route('admin.siswa.create') }}" class="inline-flex items-center mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                        <i class="fas fa-plus mr-2"></i>Tambah Siswa
+                    </a>
+                </div>
+            @endif
+        </div>
+
+        <!-- Pagination -->
+        @if($siswa && $siswa->hasPages())
+        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            {{ $siswa->links() }}
+        </div>
+        @endif
+    </div>
+</div>
 
     <!-- Detail Modal -->
     <div id="detailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -141,6 +194,14 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function deleteConfirm(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
+                document.getElementById('delete-form-' + id).submit();
+            }
+        }
+    </script>
 
     @push('scripts')
         <script>
