@@ -64,15 +64,25 @@
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                         Email <span class="text-red-500">*</span>
                     </label>
-                    <input 
-                        id="email"
-                        type="email" 
-                        name="email" 
-                        value="{{ old('email') }}"
-                        placeholder="nama@sekolah.com"
-                        required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
-                    />
+                    <div class="relative">
+                        <input 
+                            id="email"
+                            type="email" 
+                            name="email" 
+                            value="{{ old('email') }}"
+                            placeholder="nama@sekolah.com"
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                        />
+                        <span id="email-check-loader" class="hidden absolute right-3 top-3 text-gray-400">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                        <span id="email-check-icon" class="hidden absolute right-3 top-3"></span>
+                    </div>
+                    <div id="email-error" class="hidden text-red-500 text-sm mt-1 flex items-center gap-1">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="email-error-text"></span>
+                    </div>
                     @error('email')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -84,18 +94,22 @@
                         Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <input 
+                        <input
                             id="password"
-                            type="password" 
-                            name="password" 
+                            type="password"
+                            name="password"
                             placeholder="Buat password yang kuat (minimal 8 karakter)"
                             required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
                         />
-                        <button type="button" class="password-toggle absolute right-4 top-3 text-gray-400 hover:text-gray-600">
+                        <span id="password-check-icon" class="hidden absolute right-10 top-3"></span>
+                        <button type="button" class="password-toggle absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
+                    
+                    <!-- Password Strength Indicator -->
+                    
                     <p class="text-gray-600 text-xs mt-2">Minimal 8 karakter dengan huruf dan angka</p>
                     @error('password')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -108,15 +122,16 @@
                         Konfirmasi Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <input 
+                        <input
                             id="password_confirmation"
-                            type="password" 
-                            name="password_confirmation" 
+                            type="password"
+                            name="password_confirmation"
                             placeholder="Ketikkan password lagi"
                             required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
+                            class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-150"
                         />
-                        <button type="button" class="password-toggle absolute right-4 top-3 text-gray-400 hover:text-gray-600">
+                        <span id="password-confirmation-check-icon" class="hidden absolute right-10 top-3"></span>
+                        <button type="button" class="password-toggle absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
@@ -205,6 +220,118 @@
                 }
             });
         });
+
+        // Real-time email validation
+        const emailInput = document.getElementById('email');
+        const emailCheckLoader = document.getElementById('email-check-loader');
+        const emailCheckIcon = document.getElementById('email-check-icon');
+        const emailError = document.getElementById('email-error');
+        const emailErrorText = document.getElementById('email-error-text');
+        let checkTimeout;
+
+        if (emailInput) {
+            emailInput.addEventListener('input', function () {
+                const email = this.value.trim();
+                
+                clearTimeout(checkTimeout);
+                
+                emailCheckLoader.classList.add('hidden');
+                emailCheckIcon.classList.add('hidden');
+                emailError.classList.add('hidden');
+                
+                if (!email) return;
+                
+                emailCheckLoader.classList.remove('hidden');
+                
+                checkTimeout = setTimeout(() => {
+                    fetch(`/check-email?email=${encodeURIComponent(email)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            emailCheckLoader.classList.add('hidden');
+                            
+                            if (data.available) {
+                                emailCheckIcon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
+                                emailCheckIcon.classList.remove('hidden');
+                                emailError.classList.add('hidden');
+                                emailInput.classList.remove('border-red-500');
+                                emailInput.classList.add('border-green-500');
+                            } else {
+                                emailCheckIcon.classList.add('hidden');
+                                emailErrorText.textContent = 'Email sudah terdaftar di sistem';
+                                emailError.classList.remove('hidden');
+                                emailInput.classList.remove('border-green-500');
+                                emailInput.classList.add('border-red-500');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking email:', error);
+                            emailCheckLoader.classList.add('hidden');
+                        });
+                }, 500);
+            });
+        }
+
+        // Real-time password validation
+        const passwordInput = document.getElementById('password');
+        const passwordCheckIcon = document.getElementById('password-check-icon');
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function () {
+                const password = this.value;
+                const length = password.length;
+                const minLength = 8;
+
+                // Update icon dan border
+                if (length >= minLength) {
+                    passwordCheckIcon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    passwordCheckIcon.classList.remove('hidden');
+                    passwordInput.classList.remove('border-red-500', 'border-gray-300');
+                    passwordInput.classList.add('border-green-500');
+                } else if (length > 0) {
+                    passwordCheckIcon.classList.add('hidden');
+                    passwordInput.classList.remove('border-green-500', 'border-gray-300');
+                    passwordInput.classList.add('border-red-500');
+                } else {
+                    passwordCheckIcon.classList.add('hidden');
+                    passwordInput.classList.remove('border-red-500', 'border-green-500');
+                    passwordInput.classList.add('border-gray-300');
+                }
+            });
+        }
+
+        // Real-time password confirmation validation
+        const passwordConfirmationInput = document.getElementById('password_confirmation');
+        const passwordConfirmationCheckIcon = document.getElementById('password-confirmation-check-icon');
+
+        if (passwordConfirmationInput) {
+            // Add event listeners for both inputs to check confirmation
+            passwordInput.addEventListener('input', validatePasswordConfirmation);
+            passwordConfirmationInput.addEventListener('input', validatePasswordConfirmation);
+
+            function validatePasswordConfirmation() {
+                const password = passwordInput.value;
+                const confirmation = passwordConfirmationInput.value;
+
+                if (confirmation === '') {
+                    // Empty confirmation field
+                    passwordConfirmationCheckIcon.classList.add('hidden');
+                    passwordConfirmationInput.classList.remove('border-green-500', 'border-red-500');
+                    passwordConfirmationInput.classList.add('border-gray-300');
+                } else if (password === confirmation) {
+                    // Matching passwords
+                    passwordConfirmationCheckIcon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    passwordConfirmationCheckIcon.classList.remove('hidden');
+                    passwordConfirmationInput.classList.remove('border-red-500', 'border-gray-300');
+                    passwordConfirmationInput.classList.add('border-green-500');
+                } else {
+                    // Non-matching passwords
+                    passwordConfirmationCheckIcon.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+                    passwordConfirmationCheckIcon.classList.remove('hidden');
+                    passwordConfirmationInput.classList.remove('border-green-500', 'border-gray-300');
+                    passwordConfirmationInput.classList.add('border-red-500');
+                }
+            }
+        }
     });
 </script>
 @endsection

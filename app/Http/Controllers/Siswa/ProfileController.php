@@ -18,42 +18,48 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
-        
+
         // Pastikan hanya siswa yang bisa akses
         if ($user->role !== 'siswa') {
             abort(403, 'Unauthorized action.');
         }
-        
+
         // Ambil data siswa dari tabel siswa
         $siswa = Siswa::where('user_id', $user->id)->first();
-        
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         // Jika data siswa belum ada, redirect ke edit profile
         if (!$siswa) {
             return redirect()->route('siswa.profile.edit')
                 ->with('info', 'Silakan lengkapi data siswa terlebih dahulu.');
         }
-        
-        return view('siswa.profile.show', compact('user', 'siswa'));
+
+        return view('siswa.profile.show', compact('user', 'siswa', 'profileIncomplete'));
     }
 
     public function edit()
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'siswa') {
             abort(403, 'Unauthorized action.');
         }
-        
+
         // Ambil data siswa jika sudah ada
         $siswa = Siswa::where('user_id', $user->id)->first();
-        
-        return view('siswa.profile.edit', compact('user', 'siswa'));
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
+        return view('siswa.profile.edit', compact('user', 'siswa', 'profileIncomplete'));
     }
 
     public function update(Request $request)
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'siswa') {
             abort(403, 'Unauthorized action.');
         }
@@ -64,22 +70,22 @@ class ProfileController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
         ]);
 
-        // Validasi untuk data siswa
+        // Validasi untuk data siswa - sekarang semua field opsional untuk mendukung pelengkapan profil bertahap
         $siswaValidated = $request->validate([
-            'telepon' => 'required|string|max:15',
+            'telepon' => 'nullable|string|max:15',
             'telepon_wali' => 'nullable|string|max:15',
-            'alamat' => 'required|string|max:500',
+            'alamat' => 'nullable|string|max:500',
             'alamat_wali' => 'nullable|string|max:500',
-            'tanggal_lahir' => 'required|date',
-            'tempat_lahir' => 'required|string|max:255',
-            'jenis_kelamin' => 'required|in:L,P',
+            'tanggal_lahir' => 'nullable|date',
+            'tempat_lahir' => 'nullable|string|max:255',
+            'jenis_kelamin' => 'nullable|in:L,P',
             'nama_wali' => 'nullable|string|max:255',
         ]);
 
         DB::transaction(function () use ($user, $userValidated, $siswaValidated) {
             // Update data user
             $user->update($userValidated);
-            
+
             // Update atau create data siswa
             Siswa::updateOrCreate(
                 ['user_id' => $user->id],
@@ -123,17 +129,23 @@ class ProfileController extends Controller
     public function riwayatPembayaran()
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'siswa') {
             abort(403, 'Unauthorized action.');
         }
-        
+
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         $pembayaran = Pembayaran::where('user_id', $user->id)
             ->with('kategori')
             ->latest()
             ->paginate(10);
-            
-        return view('siswa.profile.riwayat-pembayaran', compact('pembayaran'));
+
+        return view('siswa.profile.riwayat-pembayaran', compact('pembayaran', 'profileIncomplete'));
     }
 
     /**
@@ -142,16 +154,22 @@ class ProfileController extends Controller
     public function riwayatTagihan()
     {
         $user = Auth::user();
-        
+
         if ($user->role !== 'siswa') {
             abort(403, 'Unauthorized action.');
         }
-        
+
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         $tagihan = Tagihan::where('user_id', $user->id)
             ->with('kategori')
             ->latest()
             ->paginate(10);
-            
-        return view('siswa.profile.riwayat-tagihan', compact('tagihan'));
+
+        return view('siswa.profile.riwayat-tagihan', compact('tagihan', 'profileIncomplete'));
     }
 }

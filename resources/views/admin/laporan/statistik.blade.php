@@ -93,7 +93,7 @@
                     <h3 class="text-lg font-bold text-gray-900 mb-4">Distribusi Status Tagihan</h3>
                     <div class="space-y-4">
                         @php
-                            $totalTags = array_sum(array_column($statistik['tagihan_status'] ?? [], 'count'));
+                            $totalTags = collect($statistik['tagihan_status'] ?? [])->sum('count');
                         @endphp
                         @forelse($statistik['tagihan_status'] ?? [] as $status)
                             <div>

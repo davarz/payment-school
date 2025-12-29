@@ -4,6 +4,20 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
+    @if($profileIncomplete)
+    <x-alert type="info" title="Profil Belum Lengkap!" closable class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <strong>Profil Anda belum lengkap.</strong> Lengkapi data diri Anda untuk pengalaman yang lebih baik.
+            </div>
+            <a href="{{ route('profile.complete') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition duration-150">
+                <i class="fas fa-user-edit mr-2"></i>
+                Lengkapi Profil
+            </a>
+        </div>
+    </x-alert>
+    @endif
+
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800">Edit Profile</h1>
@@ -55,7 +69,7 @@
                             <label for="telepon" class="block text-sm font-medium text-gray-700 mb-1">
                                 No. Telepon *
                             </label>
-                            <input type="text" id="telepon" name="telepon" value="{{ old('telepon', $user->telepon) }}" 
+                            <input type="text" id="telepon" name="telepon" value="{{ old('telepon', $siswa->telepon ?? '') }}"
                                    required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                             @error('telepon')
@@ -68,7 +82,7 @@
                             <label for="tempat_lahir" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tempat Lahir *
                             </label>
-                            <input type="text" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir', $user->tempat_lahir) }}" 
+                            <input type="text" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir', $siswa->tempat_lahir ?? '') }}"
                                    required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                             @error('tempat_lahir')
@@ -81,8 +95,8 @@
                             <label for="tanggal_lahir" class="block text-sm font-medium text-gray-700 mb-1">
                                 Tanggal Lahir *
                             </label>
-                            <input type="date" id="tanggal_lahir" name="tanggal_lahir" 
-                                   value="{{ old('tanggal_lahir', $user->tanggal_lahir->format('Y-m-d')) }}" 
+                            <input type="date" id="tanggal_lahir" name="tanggal_lahir"
+                                   value="{{ old('tanggal_lahir', $siswa->tanggal_lahir ? $siswa->tanggal_lahir->format('Y-m-d') : '') }}"
                                    required
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">
                             @error('tanggal_lahir')
@@ -95,9 +109,9 @@
                             <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">
                                 Alamat Lengkap *
                             </label>
-                            <textarea id="alamat" name="alamat" rows="3" 
+                            <textarea id="alamat" name="alamat" rows="3"
                                       required
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">{{ old('alamat', $user->alamat) }}</textarea>
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150">{{ old('alamat', $siswa->alamat ?? '') }}</textarea>
                             @error('alamat')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -209,7 +223,7 @@
                     </div>
                     <h3 class="text-lg font-semibold text-gray-800">{{ $user->name }}</h3>
                     <p class="text-sm text-gray-600">{{ $user->email }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ $user->kelas }} • {{ $user->tahun_ajaran }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $siswa->kelas ?? 'N/A' }} • {{ $siswa->tahun_ajaran ?? 'N/A' }}</p>
                 </div>
             </div>
 

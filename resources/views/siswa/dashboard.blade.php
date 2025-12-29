@@ -48,7 +48,24 @@
         $unpaidCount = $tagihan->where('status', 'unpaid')->count();
         $totalUnpaid = $tagihan->where('status', 'unpaid')->sum('jumlah_tagihan');
         $paidCount = $tagihan->where('status', 'paid')->count();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$currentSiswa || empty($currentSiswa->nis) || empty($currentSiswa->nik) || empty($currentSiswa->kelas) || empty($currentSiswa->tempat_lahir) || empty($currentSiswa->tanggal_lahir);
     @endphp
+
+    @if($profileIncomplete)
+    <x-alert type="info" title="Profil Belum Lengkap!" closable class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <strong>Profil Anda belum lengkap.</strong> Lengkapi data diri Anda untuk pengalaman yang lebih baik.
+            </div>
+            <a href="{{ route('profile.complete') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition duration-150">
+                <i class="fas fa-user-edit mr-2"></i>
+                Lengkapi Profil
+            </a>
+        </div>
+    </x-alert>
+    @endif
 
     @if($unpaidCount > 0)
     <x-alert type="warning" title="Perhatian!" closable class="mb-8">

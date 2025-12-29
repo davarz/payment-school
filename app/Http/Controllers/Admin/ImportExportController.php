@@ -89,4 +89,95 @@ class ImportExportController extends Controller
         
         return back()->with('info', 'Fitur export Excel akan segera tersedia');
     }
+
+    public function downloadTemplate()
+    {
+        // Return template file untuk import siswa
+        $file = storage_path('app/templates/template-siswa.xlsx');
+        
+        if (!file_exists($file)) {
+            return back()->with('error', 'Template file tidak ditemukan');
+        }
+        
+        return response()->download($file);
+    }
+
+    public function processSiswa(Request $request)
+    {
+        $request->validate([
+            'siswa_file' => 'required|file|mimes:xlsx,xls,csv',
+        ]);
+
+        try {
+            return back()->with('success', 'Data siswa berhasil diimpor! (Fitur masih dalam pengembangan)');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengimpor data siswa: ' . $e->getMessage());
+        }
+    }
+
+    public function exportSiswa(Request $request)
+    {
+        try {
+            $format = $request->get('format', 'excel');
+            
+            $siswaData = Siswa::with('user')
+                ->where('status_siswa', 'aktif')
+                ->get();
+            
+            if ($format === 'csv') {
+                return $this->exportAsCSV($siswaData, 'siswa');
+            }
+            
+            return back()->with('info', 'Fitur export Excel akan segera tersedia. Silakan install package Laravel Excel.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
+
+    public function exportPembayaran(Request $request)
+    {
+        try {
+            $pembayaranData = Pembayaran::with(['user.siswa', 'kategori', 'verifikator'])
+                ->where('status', 'paid')
+                ->get();
+            
+            return back()->with('info', 'Fitur export Excel akan segera tersedia. Silakan install package Laravel Excel.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
+
+    public function exportTagihan(Request $request)
+    {
+        try {
+            $tagihanData = Tagihan::with(['user.siswa', 'kategori'])
+                ->get();
+            
+            return back()->with('info', 'Fitur export Excel akan segera tersedia. Silakan install package Laravel Excel.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
+    }
+
+    private function exportAsCSV($data, $filename)
+    {
+        $csvData = [];
+        
+        foreach ($data as $row) {
+            $csvData[] = $row->toArray();
+        }
+        
+        return response()->streamDownload(function () use ($csvData) {
+            $file = fopen('php://output', 'w');
+            
+            if (count($csvData) > 0) {
+                fputcsv($file, array_keys($csvData[0]->toArray()));
+                foreach ($csvData as $row) {
+                    fputcsv($file, $row->toArray());
+                }
+            }
+            
+            fclose($file);
+        }, $filename . '-' . date('Y-m-d') . '.csv');
+    }
 }

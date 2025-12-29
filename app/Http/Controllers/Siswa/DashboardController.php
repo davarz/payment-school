@@ -14,15 +14,19 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         // Ambil data siswa dari tabel siswa
         $siswa = Siswa::where('user_id', $user->id)->first();
-        
+        $currentSiswa = $siswa; // For use in view
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         // Ambil tagihan user ini
         $tagihan = Tagihan::where('user_id', $user->id)
             ->with('kategori')
             ->get();
-        
+
         // Ambil pembayaran user ini
         $pembayaran = Pembayaran::where('user_id', $user->id)
             ->with('kategori')
@@ -34,18 +38,20 @@ class DashboardController extends Controller
         $totalTagihan = Tagihan::where('user_id', $user->id)
             ->where('status', 'unpaid')
             ->count();
-            
+
         $totalPaid = Pembayaran::where('user_id', $user->id)
             ->where('status', 'paid')
             ->sum('jumlah_bayar');
-            
+
         $pendingVerification = Pembayaran::where('user_id', $user->id)
             ->where('status', 'pending')
             ->count();
 
         return view('siswa.dashboard', compact(
-            'siswa', 
-            'tagihan', 
+            'siswa',
+            'currentSiswa',
+            'profileIncomplete',
+            'tagihan',
             'pembayaran',
             'totalTagihan',
             'totalPaid',
@@ -56,6 +62,12 @@ class DashboardController extends Controller
     public function tagihan()
     {
         $user = auth()->user();
+
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
 
         // Ambil semua tagihan user
         $tagihan = Tagihan::where('user_id', $user->id)
@@ -82,7 +94,8 @@ class DashboardController extends Controller
             'pembayaran',
             'kategori',
             'totalTagihan',
-            'totalPaid'
+            'totalPaid',
+            'profileIncomplete'
         ));
     }
 
@@ -122,6 +135,14 @@ class DashboardController extends Controller
 
     public function transaksi()
     {
+        $user = auth()->user();
+
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         $pembayaran = Pembayaran::where('user_id', auth()->id())
             ->with(['kategori', 'verifikator'])
             ->latest()
@@ -140,7 +161,8 @@ class DashboardController extends Controller
             'pembayaran',
             'totalTransaksi',
             'totalDibayar',
-            'pendingCount'
+            'pendingCount',
+            'profileIncomplete'
         ));
     }
 
@@ -149,13 +171,21 @@ class DashboardController extends Controller
      */
     public function showTagihan(Tagihan $tagihan)
     {
+        $user = auth()->user();
+
         // Pastikan tagihan milik user yang login
         if ($tagihan->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
 
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         $tagihan->load(['kategori', 'pembayaran']);
-        return view('siswa.tagihan-show', compact('tagihan'));
+        return view('siswa.tagihan-show', compact('tagihan', 'profileIncomplete'));
     }
 
     /**
@@ -163,12 +193,20 @@ class DashboardController extends Controller
      */
     public function showPembayaran(Pembayaran $pembayaran)
     {
+        $user = auth()->user();
+
         // Pastikan pembayaran milik user yang login
         if ($pembayaran->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
 
+        // Ambil data siswa dari tabel siswa
+        $siswa = Siswa::where('user_id', $user->id)->first();
+
+        // Check if profile is incomplete
+        $profileIncomplete = !$siswa || empty($siswa->nis) || empty($siswa->nik) || empty($siswa->kelas) || empty($siswa->tempat_lahir) || empty($siswa->tanggal_lahir);
+
         $pembayaran->load(['kategori', 'verifikator']);
-        return view('siswa.pembayaran-show', compact('pembayaran'));
+        return view('siswa.pembayaran-show', compact('pembayaran', 'profileIncomplete'));
     }
 }

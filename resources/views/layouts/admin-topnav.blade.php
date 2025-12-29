@@ -1,46 +1,38 @@
 <!-- Desktop Top Navigation Bar - Only visible on lg screens -->
 <nav class="hidden lg:flex sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm h-16">
     <div class="w-full px-8 flex items-center justify-between">
-        <!-- Left side: Clean Menu Items (Text Only) -->
-        <div class="flex items-center gap-1">
-            <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Dashboard
-            </a>
-            
-            <a href="{{ route('admin.siswa.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.siswa.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Data Siswa
-            </a>
-
-            <a href="{{ route('admin.kategori.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.kategori.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Kategori
-            </a>
-
-            <a href="{{ route('admin.tagihan.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.tagihan.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Tagihan
-            </a>
-
-            <a href="{{ route('admin.pembayaran.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.pembayaran.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Pembayaran
-                @if($pendingPembayaranCount > 0)
-                    <span class="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{{ $pendingPembayaranCount }}</span>
-                @endif
-            </a>
-
-            <a href="{{ route('admin.laporan.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.laporan.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Laporan
-            </a>
-
-            <a href="{{ route('admin.import-export.export') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.import-export.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Import/Export
-            </a>
-
-            <a href="{{ route('admin.bulk.naik-kelas') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.bulk.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
-                Bulk Ops
-            </a>
-        </div>
-
-        <!-- Right side: Notifications + User Menu -->
+        <!-- Left side: User Profile + Notifications -->
         <div class="flex items-center gap-4">
+            <!-- User Menu -->
+            <div class="relative">
+                <button onclick="toggleUserMenu()" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&color=3B82F6&background=DBEAFE" 
+                         alt="{{ auth()->user()->name }}" class="w-9 h-9 rounded-full">
+                    <div class="text-left">
+                        <p class="font-medium text-gray-900 text-sm">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-500 capitalize">{{ auth()->user()->role }}</p>
+                    </div>
+                </button>
+
+                <!-- User Dropdown Menu -->
+                <div id="user-menu" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+                    <div class="p-4 border-b border-gray-100">
+                        <p class="font-medium text-gray-900 text-sm">{{ auth()->user()->name }}</p>
+                        <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
+                    </div>
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
+                        <i class="fas fa-user-circle w-4"></i> Profil
+                    </a>
+                    <hr class="my-2">
+                    <form method="POST" action="{{ route('logout') }}" class="block">
+                        @csrf
+                        <button type="submit" class="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-sm transition">
+                            <i class="fas fa-sign-out-alt w-4"></i> Keluar
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Notifications -->
             <div class="relative">
                 <button class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition" onclick="toggleNotifications()">
@@ -51,7 +43,7 @@
                 </button>
                 
                 <!-- Notifications Dropdown -->
-                <div id="notifications-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+                <div id="notifications-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
                     <div class="p-4 border-b border-gray-100">
                         <h3 class="font-semibold text-gray-900">Notifikasi</h3>
                     </div>
@@ -93,39 +85,44 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- User Menu -->
-            <div class="relative">
-                <button onclick="toggleUserMenu()" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition">
-                    <div class="text-right">
-                        <p class="font-medium text-gray-900 text-sm">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-500 capitalize">{{ auth()->user()->role }}</p>
-                    </div>
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&color=3B82F6&background=DBEAFE" 
-                         alt="{{ auth()->user()->name }}" class="w-9 h-9 rounded-full">
-                </button>
+        <!-- Right side: Menu Items (Dashboard, Data Siswa, etc) -->
+        <div class="flex items-center gap-1">
+            <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Dashboard
+            </a>
+            
+            <a href="{{ route('admin.siswa.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.siswa.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Data Siswa
+            </a>
 
-                <!-- User Dropdown Menu -->
-                <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
-                    <div class="p-4 border-b border-gray-100">
-                        <p class="font-medium text-gray-900 text-sm">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
-                    </div>
-                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
-                        <i class="fas fa-user-circle w-4"></i> Profil
-                    </a>
-                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
-                        <i class="fas fa-cog w-4"></i> Pengaturan
-                    </a>
-                    <hr class="my-2">
-                    <form method="POST" action="{{ route('logout') }}" class="block">
-                        @csrf
-                        <button type="submit" class="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-sm transition">
-                            <i class="fas fa-sign-out-alt w-4"></i> Keluar
-                        </button>
-                    </form>
-                </div>
-            </div>
+            <a href="{{ route('admin.kategori.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.kategori.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Kategori
+            </a>
+
+            <a href="{{ route('admin.tagihan.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.tagihan.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Tagihan
+            </a>
+
+            <a href="{{ route('admin.pembayaran.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.pembayaran.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Pembayaran
+                @if($pendingPembayaranCount > 0)
+                    <span class="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{{ $pendingPembayaranCount }}</span>
+                @endif
+            </a>
+
+            <a href="{{ route('admin.laporan.index') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.laporan.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Laporan
+            </a>
+
+            <a href="{{ route('admin.import-export.export') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.import-export.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Import/Export
+            </a>
+
+            <a href="{{ route('admin.bulk.naik-kelas') }}" class="px-4 py-2 font-medium text-sm transition-all duration-200 rounded-lg {{ request()->routeIs('admin.bulk.*') ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50' }}">
+                Bulk Ops
+            </a>
         </div>
     </div>
 </nav>

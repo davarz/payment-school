@@ -73,21 +73,44 @@ class SiswaController extends Controller
             'tanggal_lahir' => 'required|date',
             'tempat_lahir' => 'required|string',
             'jenis_kelamin' => 'required|in:L,P',
-            'nama_wali' => 'nullable|string',
-            'telepon_wali' => 'nullable|string',
-            'alamat_wali' => 'nullable|string',
+            'nama_wali' => 'required|string',
+            'telepon_wali' => 'required|string',
+            'alamat_wali' => 'required|string',
+        ], [
+            'email.unique' => 'Email ini sudah terdaftar di sistem. Silahkan gunakan email lain.',
+            'nis.unique' => 'NIS ini sudah terdaftar. Silahkan periksa kembali nomor NIS.',
+            'nik.unique' => 'NIK ini sudah terdaftar. Silahkan periksa kembali nomor NIK.',
+            'nisn.unique' => 'NISN ini sudah terdaftar. Silahkan gunakan NISN yang lain.',
+            'name.required' => 'Nama lengkap harus diisi.',
+            'email.required' => 'Email harus diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'nis.required' => 'NIS harus diisi.',
+            'nik.required' => 'NIK harus diisi.',
+            'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',
+            'tanggal_lahir.date' => 'Format tanggal lahir tidak valid.',
+            'tempat_lahir.required' => 'Tempat lahir harus diisi.',
+            'alamat.required' => 'Alamat harus diisi.',
+            'telepon.required' => 'Nomor telepon harus diisi.',
+            'jenis_kelamin.required' => 'Jenis kelamin harus dipilih.',
+            'kelas.required' => 'Kelas harus dipilih.',
+            'tahun_ajaran.required' => 'Tahun ajaran harus diisi.',
+            'nama_wali.required' => 'Nama wali/orang tua harus diisi.',
+            'telepon_wali.required' => 'Nomor telepon wali/orang tua harus diisi.',
+            'alamat_wali.required' => 'Alamat wali/orang tua harus diisi.',
         ]);
 
-        DB::transaction(function () use ($request) {
-            // 1. Create User
-            $nama = strtolower(str_replace(' ', '', $request->name));
-            $nis = $request->nis;
-            $password = substr($nama, 0, 3) . substr($nis, -4);
-            
-            if (strlen($nama) < 3) {
-                $password = $nama . substr($nis, -4);
-            }
+        // Generate password from 3 first letters of name + last 4 digits of NIS
+        // Example: Name "Dava" + NIS "2010809" = Password "dav0809"
+        $nama = strtolower(str_replace(' ', '', $request->name));
+        $nis = $request->nis;
+        $password = substr($nama, 0, 3) . substr($nis, -4);
+        
+        if (strlen($nama) < 3) {
+            $password = $nama . substr($nis, -4);
+        }
 
+        DB::transaction(function () use ($request, $password) {
+            // 1. Create User
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -125,6 +148,30 @@ class SiswaController extends Controller
         return view('admin.siswa.show', compact('siswa'));
     }
 
+    public function checkEmail(Request $request)
+    {
+        $email = $request->query('email');
+        $currentId = $request->query('current_id'); // ID user saat ini (untuk update)
+
+        if (!$email) {
+            return response()->json(['available' => true]);
+        }
+
+        $query = User::where('email', $email);
+
+        // Jika ada current_id, exclude dari pengecekan (untuk update)
+        if ($currentId) {
+            $query->where('id', '!=', $currentId);
+        }
+
+        $exists = $query->exists();
+
+        return response()->json([
+            'available' => !$exists,
+            'email' => $email,
+        ]);
+    }
+
     public function edit(Siswa $siswa)
     {
         $siswa->load('user');
@@ -147,9 +194,9 @@ class SiswaController extends Controller
             'tempat_lahir' => 'required|string',
             'jenis_kelamin' => 'required|in:L,P',
             'status_siswa' => 'required|in:aktif,pindah,dikeluarkan,lulus',
-            'nama_wali' => 'nullable|string',
-            'telepon_wali' => 'nullable|string',
-            'alamat_wali' => 'nullable|string',
+            'nama_wali' => 'required|string',
+            'telepon_wali' => 'required|string',
+            'alamat_wali' => 'required|string',
         ]);
 
         DB::transaction(function () use ($request, $siswa) {

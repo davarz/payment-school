@@ -298,41 +298,73 @@ class LaporanController extends Controller
         $tagihanStatus = Tagihan::select('status', DB::raw('COUNT(*) as count'))
             ->groupBy('status')
             ->get()
-            ->mapWithKeys(function ($item) {
-                return [$item->status => $item->count];
-            });
+            ->map(function ($item) {
+                return [
+                    'status' => $item->status,
+                    'count' => $item->count
+                ];
+            })
+            ->values();
+        
+        // Pembayaran by metode
+        $paymentMethods = Pembayaran::where('status', 'paid')
+            ->select('metode_bayar', DB::raw('COUNT(*) as count'), DB::raw('SUM(jumlah_bayar) as total'))
+            ->groupBy('metode_bayar')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'metode_bayar' => $item->metode_bayar,
+                    'count' => $item->count,
+                    'total' => (float) $item->total
+                ];
+            })
+            ->values();
         
         // Pembayaran by kategori
-        $pembayaranByKategori = Pembayaran::where('status', 'paid')
+        $categoryStatistics = Pembayaran::where('status', 'paid')
             ->with('kategori')
-            ->select('kategori_pembayaran_id', DB::raw('SUM(jumlah_bayar) as total'))
+            ->select('kategori_pembayaran_id', DB::raw('COUNT(*) as count'), DB::raw('SUM(jumlah_bayar) as total'))
             ->groupBy('kategori_pembayaran_id')
             ->get()
             ->map(function ($item) {
                 return [
-                    'kategori' => $item->kategori->nama_kategori,
+                    'kategori' => $item->kategori->nama_kategori ?? 'N/A',
+                    'count' => $item->count,
                     'total' => (float) $item->total
                 ];
-            });
+            })
+            ->sortByDesc('total')
+            ->values();
         
-        // Siswa by kelas
-        $siswaByKelas = Siswa::where('status_siswa', 'aktif')
-            ->select('kelas', DB::raw('COUNT(*) as count'))
-            ->groupBy('kelas')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'kelas' => $item->kelas ?? 'Belum Ada',
-                    'count' => $item->count
-                ];
-            });
+        // Get overall statistics
+        $totalPembayaran = Pembayaran::where('status', 'paid')->sum('jumlah_bayar');
+        $totalTagihan = Tagihan::sum('jumlah_tagihan');
+        $totalPembayaranTerverifikasi = Pembayaran::where('status', 'paid')->where('verified_at', '!=', null)->sum('jumlah_bayar');
+        $jumlahPembayaran = Pembayaran::where('status', 'paid')->count();
+        $jumlahPembayaranTerverifikasi = Pembayaran::where('status', 'paid')->where('verified_at', '!=', null)->count();
+        $jumlahTagihan = Tagihan::count();
+        $totalTunggakan = Tagihan::where('status', 'unpaid')->sum('jumlah_tagihan');
+        $jumlahTunggakan = Tagihan::where('status', 'unpaid')->count();
         
-        return view('admin.laporan.statistik', compact(
-            'monthlyRevenue',
-            'tagihanStatus',
-            'pembayaranByKategori',
-            'siswaByKelas'
-        ));
+        $persentasePembayaran = $jumlahTagihan > 0 ? round((($jumlahTagihan - $jumlahTunggakan) / $jumlahTagihan) * 100) : 0;
+        
+        $statistik = [
+            'total_pembayaran' => $totalPembayaran,
+            'jumlah_pembayaran' => $jumlahPembayaran,
+            'total_pembayaran_terverifikasi' => $totalPembayaranTerverifikasi,
+            'jumlah_pembayaran_terverifikasi' => $jumlahPembayaranTerverifikasi,
+            'total_tagihan' => $totalTagihan,
+            'jumlah_tagihan' => $jumlahTagihan,
+            'total_tunggakan' => $totalTunggakan,
+            'jumlah_tunggakan' => $jumlahTunggakan,
+            'persentase_pembayaran' => $persentasePembayaran,
+            'monthly_revenue' => $monthlyRevenue,
+            'tagihan_status' => $tagihanStatus,
+            'payment_methods' => $paymentMethods,
+            'category_statistics' => $categoryStatistics,
+        ];
+        
+        return view('admin.laporan.statistik', compact('statistik'));
     }
     
     /**

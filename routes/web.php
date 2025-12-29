@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Artisan;
 
 // ==================== PUBLIC ROUTES ====================
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/check-email', [AdminSiswaController::class, 'checkEmail'])->name('check-email');
 
 // ==================== AUTH ROUTES ====================
 require __DIR__ . '/auth.php';
@@ -57,6 +58,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Profile Completion routes
+    Route::get('/profile/complete', [App\Http\Controllers\ProfileCompletionController::class, 'show'])->name('profile.complete');
+    Route::put('/profile/complete', [App\Http\Controllers\ProfileCompletionController::class, 'update'])->name('profile.complete.update');
 });
 
 // ==================== ADMIN ROUTES ====================
@@ -69,6 +74,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [AdminSiswaController::class, 'index'])->name('index');
         Route::get('/create', [AdminSiswaController::class, 'create'])->name('create');
         Route::post('/', [AdminSiswaController::class, 'store'])->name('store');
+        Route::get('/check-email', [AdminSiswaController::class, 'checkEmail'])->name('check-email');
         Route::get('/{siswa}', [AdminSiswaController::class, 'show'])->name('show');
         Route::get('/{siswa}/edit', [AdminSiswaController::class, 'edit'])->name('edit');
         Route::put('/{siswa}', [AdminSiswaController::class, 'update'])->name('update');
@@ -131,9 +137,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Import/Export
     Route::prefix('import-export')->name('import-export.')->group(function () {
         Route::get('/export', [ImportExportController::class, 'exportData'])->name('export');
-        Route::get('/download-backup', [ImportExportController::class, 'downloadBackup'])->name('download-backup');
         Route::get('/import', [ImportExportController::class, 'importData'])->name('import');
+        Route::get('/download-backup', [ImportExportController::class, 'downloadBackup'])->name('download-backup');
+        Route::get('/download-template', [ImportExportController::class, 'downloadTemplate'])->name('download-template');
         Route::post('/import', [ImportExportController::class, 'processImport'])->name('process-import');
+        Route::post('/import-siswa', [ImportExportController::class, 'processSiswa'])->name('process-siswa');
+        Route::post('/export-siswa', [ImportExportController::class, 'exportSiswa'])->name('export-siswa');
+        Route::post('/export-pembayaran', [ImportExportController::class, 'exportPembayaran'])->name('export-pembayaran');
+        Route::post('/export-tagihan', [ImportExportController::class, 'exportTagihan'])->name('export-tagihan');
     });
 
     // Security

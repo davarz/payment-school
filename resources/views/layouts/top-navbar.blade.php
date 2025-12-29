@@ -92,9 +92,6 @@
                     <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
                         <i class="fas fa-user-circle w-4"></i> Profil
                     </a>
-                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">
-                        <i class="fas fa-cog w-4"></i> Pengaturan
-                    </a>
                     <hr class="my-2">
                     <form method="POST" action="{{ route('logout') }}" class="block">
                         @csrf

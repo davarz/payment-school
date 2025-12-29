@@ -4,6 +4,20 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
+    @if($profileIncomplete)
+    <x-alert type="info" title="Profil Belum Lengkap!" closable class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <strong>Profil Anda belum lengkap.</strong> Lengkapi data diri Anda untuk pengalaman yang lebih baik.
+            </div>
+            <a href="{{ route('profile.complete') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition duration-150">
+                <i class="fas fa-user-edit mr-2"></i>
+                Lengkapi Profil
+            </a>
+        </div>
+    </x-alert>
+    @endif
+
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800">Profile Saya</h1>
@@ -47,12 +61,12 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">NIS</label>
-                                <p class="text-lg font-mono text-gray-900">{{ $user->nis }}</p>
+                                <p class="text-lg font-mono text-gray-900">{{ $siswa->nis ?? '-' }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">NIK</label>
-                                <p class="text-lg font-mono text-gray-900">{{ $user->nik }}</p>
+                                <p class="text-lg font-mono text-gray-900">{{ $siswa->nik ?? '-' }}</p>
                             </div>
                         </div>
 
@@ -60,25 +74,25 @@
                         <div class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">Kelas</label>
-                                <p class="text-lg text-gray-900">{{ $user->kelas }}</p>
+                                <p class="text-lg text-gray-900">{{ $siswa->kelas ?? '-' }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">Tahun Ajaran</label>
-                                <p class="text-lg text-gray-900">{{ $user->tahun_ajaran }}</p>
+                                <p class="text-lg text-gray-900">{{ $siswa->tahun_ajaran ?? '-' }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">No. Telepon</label>
-                                <p class="text-lg text-gray-900">{{ $user->telepon ?? '-' }}</p>
+                                <p class="text-lg text-gray-900">{{ $siswa->telepon ?? '-' }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                                    {{ $user->status_siswa == 'aktif' ? 'bg-green-100 text-green-800' : 
-                                       ($user->status_siswa == 'pindah' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                    {{ ucfirst($user->status_siswa) }}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                    {{ $siswa->status_siswa == 'aktif' ? 'bg-green-100 text-green-800' :
+                                       ($siswa->status_siswa == 'pindah' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                    {{ ucfirst($siswa->status_siswa) }}
                                 </span>
                             </div>
                         </div>
@@ -90,14 +104,14 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">Tempat, Tanggal Lahir</label>
                                 <p class="text-gray-900">
-                                    {{ $user->tempat_lahir }}, 
-                                    {{ \Carbon\Carbon::parse($user->tanggal_lahir)->translatedFormat('d F Y') }}
+                                    {{ $siswa->tempat_lahir ?? '-' }},
+                                    {{ $siswa->tanggal_lahir ? \Carbon\Carbon::parse($siswa->tanggal_lahir)->translatedFormat('d F Y') : '-' }}
                                 </p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-500 mb-1">Alamat</label>
-                                <p class="text-gray-900">{{ $user->alamat ?? '-' }}</p>
+                                <p class="text-gray-900">{{ $siswa->alamat ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
@@ -151,7 +165,7 @@
                             {{ $user->pembayaran->where('status', 'verified')->count() }}
                         </span>
                     </div>
-                    
+
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600">Tagihan Pending</span>
                         <span class="font-semibold text-orange-600">

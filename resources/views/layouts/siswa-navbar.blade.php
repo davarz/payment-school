@@ -154,15 +154,10 @@
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {
-        if (!event.target.closest('.relative') && !event.target.closest('button[onclick*="toggle"]')) {
-            document.getElementById('notifications-dropdown')?.classList.add('hidden');
-            document.getElementById('user-menu')?.classList.add('hidden');
-        }    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
         const notifications = document.getElementById('notifications-dropdown');
         const userMenu = document.getElementById('user-menu');
 
-        if (event.target.closest('.relative') === null) {
+        if (!event.target.closest('.relative') && !event.target.closest('button[onclick*="toggle"]')) {
             notifications?.classList.add('hidden');
             userMenu?.classList.add('hidden');
         }

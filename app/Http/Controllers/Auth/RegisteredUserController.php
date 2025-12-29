@@ -38,18 +38,18 @@ class RegisteredUserController extends Controller
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ]);
 
-            // Validasi untuk tabel siswa
+            // Validasi untuk tabel siswa (hanya field yang diperlukan saat registrasi)
             $siswaValidated = $request->validate([
-                'nis' => ['required', 'string', 'max:20', 'unique:siswa'],
-                'nik' => ['required', 'string', 'max:16', 'unique:siswa'],
+                'nis' => ['nullable', 'string', 'max:20', 'unique:siswa'],
+                'nik' => ['nullable', 'string', 'max:16', 'unique:siswa'],
                 'nisn' => ['nullable', 'string', 'max:10', 'unique:siswa'],
-                'tahun_ajaran' => ['required', 'string'],
-                'kelas' => ['required', 'string'],
-                'jenis_kelamin' => ['required', 'in:L,P'],
-                'tempat_lahir' => ['required', 'string', 'max:100'],
-                'tanggal_lahir' => ['required', 'date'],
-                'telepon' => ['required', 'string', 'max:15'],
-                'alamat' => ['required', 'string', 'max:500'],
+                'tahun_ajaran' => ['nullable', 'string'],
+                'kelas' => ['nullable', 'string'],
+                'jenis_kelamin' => ['nullable', 'in:L,P'],
+                'tempat_lahir' => ['nullable', 'string', 'max:100'],
+                'tanggal_lahir' => ['nullable', 'date'],
+                'telepon' => ['nullable', 'string', 'max:15'],
+                'alamat' => ['nullable', 'string', 'max:500'],
                 'nama_wali' => ['nullable', 'string', 'max:255'],
                 'telepon_wali' => ['nullable', 'string', 'max:15'],
                 'alamat_wali' => ['nullable', 'string', 'max:500'],
@@ -63,14 +63,44 @@ class RegisteredUserController extends Controller
                 'role' => 'siswa',
             ]);
 
-            // Create siswa data
-            Siswa::create(array_merge(
-                $siswaValidated,
-                [
+            // Check if any student data was provided
+            $hasStudentData = false;
+            foreach ($siswaValidated as $value) {
+                if (!empty($value)) {
+                    $hasStudentData = true;
+                    break;
+                }
+            }
+
+            // Create siswa data only if any student data was provided, otherwise create with minimal data
+            if ($hasStudentData) {
+                Siswa::create(array_merge(
+                    $siswaValidated,
+                    [
+                        'user_id' => $user->id,
+                        'status_siswa' => 'aktif',
+                    ]
+                ));
+            } else {
+                // Create with minimal required data
+                Siswa::create([
                     'user_id' => $user->id,
                     'status_siswa' => 'aktif',
-                ]
-            ));
+                    'nis' => null,
+                    'nik' => null,
+                    'nisn' => null,
+                    'tahun_ajaran' => null,
+                    'kelas' => null,
+                    'jenis_kelamin' => null,
+                    'tempat_lahir' => null,
+                    'tanggal_lahir' => null,
+                    'telepon' => null,
+                    'alamat' => null,
+                    'nama_wali' => null,
+                    'telepon_wali' => null,
+                    'alamat_wali' => null,
+                ]);
+            }
 
             event(new Registered($user));
 
